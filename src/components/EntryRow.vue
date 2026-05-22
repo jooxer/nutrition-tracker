@@ -6,9 +6,16 @@ import { computed } from 'vue';
 const props = defineProps<{ entry: Entry; food?: FoodRow }>();
 defineEmits<{ remove: [string] }>();
 
+function totalWeight(spec: string, amount: number): string | null {
+  const m = spec.match(/(\d+(?:\.\d+)?)\s*g\b/i);
+  if (!m) return null;
+  const grams = Number(m[1]) * amount;
+  return `${Number.isInteger(grams) ? grams : grams.toFixed(1)} g`;
+}
+
 const d = computed(() => {
   if (props.entry.kind === 'food') {
-    if (!props.food) return { name: '已删除食物', spec: '', n: { carb: 0, protein: 0, fat: 0 }, adhoc: false };
+    if (!props.food) return { name: '已删除食物', spec: '', weight: null, n: { carb: 0, protein: 0, fat: 0 }, adhoc: false };
     const n = entryTotals(
       { carb: props.food.carb, protein: props.food.protein, fat: props.food.fat },
       props.entry.amount
@@ -16,6 +23,7 @@ const d = computed(() => {
     return {
       name: props.food.name,
       spec: `${props.food.spec} × ${props.entry.amount}`,
+      weight: totalWeight(props.food.spec, props.entry.amount),
       n,
       adhoc: false
     };
@@ -27,6 +35,7 @@ const d = computed(() => {
   return {
     name: props.entry.name,
     spec: `${props.entry.spec} × ${props.entry.amount}`,
+    weight: totalWeight(props.entry.spec, props.entry.amount),
     n,
     adhoc: true
   };
@@ -41,7 +50,10 @@ const d = computed(() => {
           <span class="text-sm font-medium truncate">{{ d.name }}</span>
           <span v-if="d.adhoc" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 flex-shrink-0">临时</span>
         </div>
-        <div class="text-xs text-slate-400 mt-0.5">{{ d.spec }}</div>
+        <div class="flex items-baseline justify-between gap-2 mt-0.5">
+          <span class="text-xs text-slate-400 truncate">{{ d.spec }}</span>
+          <span v-if="d.weight" class="text-xs text-slate-600 font-medium flex-shrink-0">{{ d.weight }}</span>
+        </div>
       </div>
       <button
         class="text-slate-300 hover:text-red-500 -mt-1 -mr-1 px-2 py-1 text-lg leading-none flex-shrink-0"
