@@ -5,7 +5,7 @@ import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { useToast } from '@/stores/toastStore';
 import { todayKey } from '@/lib/date';
-import { targetsFor } from '@/constants/goals';
+import { WEIGHT_KG, targetsFor } from '@/constants/goals';
 import type { RecipeRow } from '@/db/db';
 import MetabolicDial from '@/components/MetabolicDial.vue';
 import EntryRow from '@/components/EntryRow.vue';
@@ -25,6 +25,11 @@ onMounted(async () => {
 });
 
 const targets = computed(() => targetsFor(daily.log?.dayType ?? 'rest'));
+const targetMuls = computed(() => ({
+  carb: targets.value.carb / WEIGHT_KG,
+  protein: targets.value.protein / WEIGHT_KG,
+  fat: targets.value.fat / WEIGHT_KG
+}));
 const dayType = computed({
   get: () => daily.log?.dayType ?? 'rest',
   set: async (v) => { await daily.changeDayType(v); }
@@ -59,7 +64,7 @@ async function onPickAdhoc(d: { name: string; spec: string; carb: number; protei
       ]" />
     </div>
 
-    <MetabolicDial :totals="daily.totals" :targets="targets" :kcal="daily.kcal" :muls="daily.muls" />
+    <MetabolicDial :totals="daily.totals" :targets="targets" :kcal="daily.kcal" :muls="daily.muls" :target-muls="targetMuls" />
 
     <div class="rounded-2xl bg-white shadow-sm overflow-hidden">
       <div class="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">今日明细</div>

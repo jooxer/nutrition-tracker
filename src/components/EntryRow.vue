@@ -50,16 +50,16 @@ const d = computed(() => {
           <span class="text-sm font-medium truncate">{{ d.name }}</span>
           <span v-if="d.adhoc" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 flex-shrink-0">临时</span>
         </div>
-        <div class="flex items-baseline justify-between gap-2 mt-0.5">
-          <span class="text-xs text-slate-400 truncate">{{ d.spec }}</span>
-          <span v-if="d.weight" class="text-xs text-slate-600 font-medium flex-shrink-0">{{ d.weight }}</span>
-        </div>
+        <div class="text-xs text-slate-400 mt-0.5">{{ d.spec }}</div>
       </div>
-      <button
-        class="text-slate-300 hover:text-red-500 -mt-1 -mr-1 px-2 py-1 text-lg leading-none flex-shrink-0"
-        aria-label="删除"
-        @click="$emit('remove', entry.id)"
-      >✕</button>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <span v-if="d.weight" class="text-sm font-bold text-slate-800">{{ d.weight }}</span>
+        <button
+          class="text-slate-300 hover:text-red-500 px-2 py-1 text-lg leading-none"
+          aria-label="删除"
+          @click="$emit('remove', entry.id)"
+        >✕</button>
+      </div>
     </div>
     <div class="flex gap-1.5 mt-2 text-[11px]">
       <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">

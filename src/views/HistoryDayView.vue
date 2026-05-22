@@ -26,6 +26,11 @@ const totals = computed(() => log.value ? sumTotals(log.value.entries.map(nutrie
 const kcal = computed(() => kcalOf(totals.value));
 const muls = computed(() => multipliers(totals.value, WEIGHT_KG));
 const targets = computed(() => targetsFor(log.value?.dayType ?? 'rest'));
+const targetMuls = computed(() => ({
+  carb: targets.value.carb / WEIGHT_KG,
+  protein: targets.value.protein / WEIGHT_KG,
+  fat: targets.value.fat / WEIGHT_KG
+}));
 </script>
 
 <template>
@@ -33,7 +38,7 @@ const targets = computed(() => targetsFor(log.value?.dayType ?? 'rest'));
     <div class="text-sm text-slate-500">{{ date }}（{{ log?.dayType === 'training' ? '力训日' : '休息日' }}）</div>
     <div v-if="!log" class="text-center text-slate-400 py-8">无记录</div>
     <template v-else>
-      <MetabolicDial :totals="totals" :targets="targets" :kcal="kcal" :muls="muls" />
+      <MetabolicDial :totals="totals" :targets="targets" :kcal="kcal" :muls="muls" :target-muls="targetMuls" />
       <div class="rounded-2xl bg-white shadow-sm overflow-hidden">
         <div class="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">明细</div>
         <EntryRow v-for="e in log.entries" :key="e.id"
