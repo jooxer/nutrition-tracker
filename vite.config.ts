@@ -26,6 +26,18 @@ export default defineConfig({
     })
   ],
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) {
+            return 'echarts';
+          }
+        }
+      }
+    }
+  },
   test: {
     environment: 'jsdom',
     globals: true,

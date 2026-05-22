@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import { listLogsBetween } from '@/db/logs';
 import { kcalOf, sumTotals, entryTotals } from '@/lib/calc';
 import { targetsFor } from '@/constants/goals';
 import { monthRange } from '@/lib/date';
 import { useFoodStore } from '@/stores/foodStore';
 import CalendarHeatmap from '@/components/CalendarHeatmap.vue';
-import TrendChart from '@/components/TrendChart.vue';
+const TrendChart = defineAsyncComponent(() => import('@/components/TrendChart.vue'));
 import { useRouter } from 'vue-router';
 import type { DailyLogRow, Entry } from '@/db/db';
 
