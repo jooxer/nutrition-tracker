@@ -45,7 +45,7 @@ function save() {
         <label class="block">规格<input v-model="form.spec" class="mt-1 w-full px-3 py-2 rounded-lg bg-slate-100" /></label>
         <div class="grid grid-cols-3 gap-2">
           <label class="block">碳水 (g)<input v-model.number="form.carb" type="number" step="0.1" class="mt-1 w-full px-3 py-2 rounded-lg bg-slate-100" /></label>
-          <label class="block">蛋白 (g)<input v-model.number="form.protein" type="number" step="0.1" class="mt-1 w-full px-3 py-2 rounded-lg bg-slate-100" /></label>
+          <label class="block">蛋白质 (g)<input v-model.number="form.protein" type="number" step="0.1" class="mt-1 w-full px-3 py-2 rounded-lg bg-slate-100" /></label>
           <label class="block">脂肪 (g)<input v-model.number="form.fat" type="number" step="0.1" class="mt-1 w-full px-3 py-2 rounded-lg bg-slate-100" /></label>
         </div>
         <label class="block">备注<input v-model="form.note" class="mt-1 w-full px-3 py-2 rounded-lg bg-slate-100" /></label>

@@ -39,7 +39,7 @@ function render() {
   const s = series.value;
   chart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { data: ['碳水', '蛋白', '脂肪', '热量'], top: 0 },
+    legend: { data: ['碳水', '蛋白质', '脂肪', '热量'], top: 0 },
     grid: { top: 30, left: 40, right: 50, bottom: 30 },
     xAxis: { type: 'category', data: s.dates },
     yAxis: [
@@ -48,7 +48,7 @@ function render() {
     ],
     series: [
       { name: '碳水', type: 'line', data: s.carb,    color: '#3b82f6', smooth: true },
-      { name: '蛋白', type: 'line', data: s.protein, color: '#10b981', smooth: true },
+      { name: '蛋白质', type: 'line', data: s.protein, color: '#10b981', smooth: true },
       { name: '脂肪', type: 'line', data: s.fat,     color: '#f59e0b', smooth: true },
       { name: '热量', type: 'bar',  data: s.kcal,    yAxisIndex: 1, color: '#cbd5e1', barWidth: 8 }
     ]

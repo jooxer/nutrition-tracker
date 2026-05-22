@@ -9,9 +9,9 @@ const props = defineProps<{
 }>();
 
 const items = computed(() => [
-  { key: 'carb',    label: '碳水', color: '#3b82f6', cur: props.totals.carb,    tgt: props.targets.carb,    unit: 'g' },
-  { key: 'protein', label: '蛋白', color: '#10b981', cur: props.totals.protein, tgt: props.targets.protein, unit: 'g' },
-  { key: 'fat',     label: '脂肪', color: '#f59e0b', cur: props.totals.fat,     tgt: props.targets.fat,     unit: 'g' }
+  { key: 'carb',    label: '碳水',   color: '#3b82f6', cur: props.totals.carb,    tgt: props.targets.carb,    unit: 'g' },
+  { key: 'protein', label: '蛋白质', color: '#10b981', cur: props.totals.protein, tgt: props.targets.protein, unit: 'g' },
+  { key: 'fat',     label: '脂肪',   color: '#f59e0b', cur: props.totals.fat,     tgt: props.targets.fat,     unit: 'g' }
 ]);
 
 function pct(cur: number, tgt: number) { return tgt > 0 ? Math.min(cur / tgt, 1.5) : 0; }
@@ -35,14 +35,15 @@ function dasharray(cur: number, tgt: number) {
         <div class="text-sm font-semibold">{{ i.cur.toFixed(1) }}<span class="text-slate-400 text-xs"> / {{ i.tgt.toFixed(0) }}{{ i.unit }}</span></div>
       </div>
     </div>
-    <div class="flex justify-between items-baseline border-t border-slate-100 pt-3">
+    <div class="flex justify-between items-start border-t border-slate-100 pt-3 gap-3">
       <div>
         <div class="text-xs text-slate-500">总热量</div>
         <div class="text-lg font-semibold">{{ Math.round(kcal) }}<span class="text-slate-400 text-sm"> / {{ Math.round(targets.kcal) }} kcal</span></div>
       </div>
-      <div class="text-right text-xs text-slate-500">
-        <div>碳水 {{ muls.carb.toFixed(2) }}× · 蛋白 {{ muls.protein.toFixed(2) }}×</div>
-        <div>脂肪 {{ muls.fat.toFixed(2) }}× / kg</div>
+      <div class="text-right text-xs text-slate-500 leading-relaxed">
+        <div>碳水 <b class="text-slate-700 font-semibold">{{ muls.carb.toFixed(2) }}×</b> /kg</div>
+        <div>蛋白质 <b class="text-slate-700 font-semibold">{{ muls.protein.toFixed(2) }}×</b> /kg</div>
+        <div>脂肪 <b class="text-slate-700 font-semibold">{{ muls.fat.toFixed(2) }}×</b> /kg</div>
       </div>
     </div>
   </div>
