@@ -2,6 +2,9 @@ import { getDB, type DailyLogRow, type Entry } from './db';
 import type { DayType } from '@/constants/goals';
 import { uuid } from '@/lib/uuid';
 
+type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
+export type EntryInput = DistributiveOmit<Entry, 'id'>;
+
 export async function getLog(date: string): Promise<DailyLogRow | undefined> {
   return (await getDB()).get('daily_logs', date);
 }
@@ -15,7 +18,7 @@ export async function getOrCreateLog(date: string, dayType: DayType): Promise<Da
   return fresh;
 }
 
-export async function addEntry(date: string, input: Omit<Entry, 'id'>): Promise<string> {
+export async function addEntry(date: string, input: EntryInput): Promise<string> {
   const db = await getDB();
   const log = await db.get('daily_logs', date);
   if (!log) throw new Error(`log ${date} not found`);
