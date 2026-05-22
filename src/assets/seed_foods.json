@@ -1,0 +1,866 @@
+[
+  {
+    "name": "米饭",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 30,
+    "protein": 2.8,
+    "fat": 0.39,
+    "note": null
+  },
+  {
+    "name": "杂粮饭",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 26,
+    "protein": 2.8,
+    "fat": 0.39,
+    "note": null
+  },
+  {
+    "name": "豆浆",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 28,
+    "protein": 40,
+    "fat": 22,
+    "note": null
+  },
+  {
+    "name": "燕麦片",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 45.7,
+    "protein": 21.6,
+    "fat": 8.3,
+    "note": null
+  },
+  {
+    "name": "土豆（蒸）",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 15.3,
+    "protein": 3,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "红薯（蒸）",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 15.1,
+    "protein": 1.2,
+    "fat": 0.1,
+    "note": null
+  },
+  {
+    "name": "紫薯（生）",
+    "category": "主食",
+    "spec": "101g",
+    "carb": 31.7,
+    "protein": 1.2,
+    "fat": 0.3,
+    "note": null
+  },
+  {
+    "name": "营养米粉",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 89.3,
+    "protein": 5.8,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "馒头",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 49.3,
+    "protein": 1,
+    "fat": 0.9,
+    "note": null
+  },
+  {
+    "name": "牛肉面大碗-学一",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 95,
+    "protein": 12,
+    "fat": 10,
+    "note": null
+  },
+  {
+    "name": "山药绿豆",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 26.2,
+    "protein": 6.8,
+    "fat": 0.6,
+    "note": null
+  },
+  {
+    "name": "脾豆浆（秋）",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 28.5,
+    "protein": 6.2,
+    "fat": 4.8,
+    "note": null
+  },
+  {
+    "name": "脾豆浆（夏）",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 28.7,
+    "protein": 6.9,
+    "fat": 2.2,
+    "note": null
+  },
+  {
+    "name": "肾豆浆",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 27.4,
+    "protein": 6.3,
+    "fat": 5.1,
+    "note": null
+  },
+  {
+    "name": "银耳羹",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 37.8,
+    "protein": 8.3,
+    "fat": 4.1,
+    "note": null
+  },
+  {
+    "name": "银耳羹（秋）",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 24.5,
+    "protein": 2.8,
+    "fat": 0.5,
+    "note": null
+  },
+  {
+    "name": "银耳羹（无雪梨）（秋）",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 17.2,
+    "protein": 2.6,
+    "fat": 0.5,
+    "note": null
+  },
+  {
+    "name": "银耳羹（无雪梨）（夏）",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 16.5,
+    "protein": 2.6,
+    "fat": 0.6,
+    "note": null
+  },
+  {
+    "name": "气红豆浆",
+    "category": "主食",
+    "spec": "单人份",
+    "carb": 47.3,
+    "protein": 9.4,
+    "fat": 6.4,
+    "note": null
+  },
+  {
+    "name": "生米",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 77,
+    "protein": 7.2,
+    "fat": 0.9,
+    "note": null
+  },
+  {
+    "name": "荞麦面",
+    "category": "主食",
+    "spec": "100g",
+    "carb": 72.9,
+    "protein": 12.9,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "不倒翁金拉面",
+    "category": "主食",
+    "spec": "1包",
+    "carb": 77,
+    "protein": 12,
+    "fat": 16,
+    "note": null
+  },
+  {
+    "name": "不倒翁海鲜拉面",
+    "category": "主食",
+    "spec": "1包",
+    "carb": 78,
+    "protein": 14,
+    "fat": 15,
+    "note": null
+  },
+  {
+    "name": "不倒翁芝麻鸡蛋",
+    "category": "主食",
+    "spec": "1包",
+    "carb": 73,
+    "protein": 11,
+    "fat": 18,
+    "note": null
+  },
+  {
+    "name": "香蕉",
+    "category": "水果",
+    "spec": "100g",
+    "carb": 22,
+    "protein": 1,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "苹果/梨/猕猴桃/蓝莓",
+    "category": "水果",
+    "spec": "100g",
+    "carb": 14,
+    "protein": 1,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "橘子/柚子/桃子",
+    "category": "水果",
+    "spec": "100g",
+    "carb": 10,
+    "protein": 1,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "草莓/蜜瓜/西瓜",
+    "category": "水果",
+    "spec": "100g",
+    "carb": 7,
+    "protein": 1,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "燕麦麸",
+    "category": "碳水其他",
+    "spec": "一勺40g",
+    "carb": 17.12,
+    "protein": 6,
+    "fat": 3.92,
+    "note": null
+  },
+  {
+    "name": "葡萄糖",
+    "category": "碳水其他",
+    "spec": "一包30g",
+    "carb": 26,
+    "protein": 0,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "QQ糖",
+    "category": "碳水其他",
+    "spec": "一包20g",
+    "carb": 14.6,
+    "protein": 1.22,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "旺仔小馒头",
+    "category": "碳水其他",
+    "spec": "两包90g",
+    "carb": 78.3,
+    "protein": 2.52,
+    "fat": 1.35,
+    "note": null
+  },
+  {
+    "name": "辛拉面",
+    "category": "碳水其他",
+    "spec": "一包100g",
+    "carb": 55,
+    "protein": 8,
+    "fat": 10,
+    "note": null
+  },
+  {
+    "name": "全脂牛奶",
+    "category": "碳水其他",
+    "spec": "100g",
+    "carb": 21.6,
+    "protein": 16.2,
+    "fat": 17.6,
+    "note": null
+  },
+  {
+    "name": "煲主公牛奶",
+    "category": "碳水其他",
+    "spec": "100g",
+    "carb": 4.5,
+    "protein": 4,
+    "fat": 4.2,
+    "note": null
+  },
+  {
+    "name": "ell牛乳（茉莉奶白）",
+    "category": "碳水其他",
+    "spec": "100g",
+    "carb": 4.6,
+    "protein": 3.1,
+    "fat": 3.6,
+    "note": null
+  },
+  {
+    "name": "咖奶",
+    "category": "碳水其他",
+    "spec": "100g",
+    "carb": 5.3,
+    "protein": 1.6,
+    "fat": 30.3,
+    "note": null
+  },
+  {
+    "name": "蛋白粉",
+    "category": "蛋白",
+    "spec": "一勺27g",
+    "carb": 1,
+    "protein": 24,
+    "fat": 1,
+    "note": null
+  },
+  {
+    "name": "鸡蛋白",
+    "category": "蛋白",
+    "spec": "一个",
+    "carb": 0,
+    "protein": 3,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "鸡蛋黄",
+    "category": "蛋白",
+    "spec": "一个",
+    "carb": 0,
+    "protein": 3,
+    "fat": 4.8,
+    "note": null
+  },
+  {
+    "name": "乌鸡卷",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 2,
+    "protein": 14.7,
+    "fat": 10.7,
+    "note": null
+  },
+  {
+    "name": "去皮鸡腿肉",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 0,
+    "protein": 18,
+    "fat": 5,
+    "note": null
+  },
+  {
+    "name": "酱牛肉-各食堂",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 2,
+    "protein": 32,
+    "fat": 3,
+    "note": null
+  },
+  {
+    "name": "黑鱼片-勺一",
+    "category": "蛋白",
+    "spec": "一份80g",
+    "carb": 0,
+    "protein": 20,
+    "fat": 2,
+    "note": null
+  },
+  {
+    "name": "白虾仁",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 0.7,
+    "protein": 11.7,
+    "fat": 0.7,
+    "note": null
+  },
+  {
+    "name": "猪瘦肉",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 1.5,
+    "protein": 20.3,
+    "fat": 6.2,
+    "note": null
+  },
+  {
+    "name": "牛肋条",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 0,
+    "protein": 20,
+    "fat": 5.4,
+    "note": null
+  },
+  {
+    "name": "鸡蛋",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 0,
+    "protein": 13.1,
+    "fat": 8.6,
+    "note": null
+  },
+  {
+    "name": "1号店鸡蛋",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 3.7,
+    "protein": 12.8,
+    "fat": 6.9,
+    "note": null
+  },
+  {
+    "name": "京鲜生鸡蛋",
+    "category": "蛋白",
+    "spec": "100g",
+    "carb": 2,
+    "protein": 13.2,
+    "fat": 9.2,
+    "note": null
+  },
+  {
+    "name": "纯油",
+    "category": "脂肪",
+    "spec": "1g",
+    "carb": 0,
+    "protein": 0,
+    "fat": 1,
+    "note": "用于记录额外的油，比如炒菜用油"
+  },
+  {
+    "name": "混合果仁",
+    "category": "脂肪",
+    "spec": "100g",
+    "carb": 7,
+    "protein": 15.3,
+    "fat": 62.6,
+    "note": null
+  },
+  {
+    "name": "核桃",
+    "category": "脂肪",
+    "spec": "一颗6g",
+    "carb": 1.2,
+    "protein": 1,
+    "fat": 3.8,
+    "note": null
+  },
+  {
+    "name": "夏威夷果",
+    "category": "脂肪",
+    "spec": "一颗3g",
+    "carb": 0.5,
+    "protein": 0.3,
+    "fat": 2.5,
+    "note": null
+  },
+  {
+    "name": "巴旦木",
+    "category": "脂肪",
+    "spec": "一颗3g",
+    "carb": 0.8,
+    "protein": 0.6,
+    "fat": 1.3,
+    "note": null
+  },
+  {
+    "name": "榛子仁",
+    "category": "脂肪",
+    "spec": "一颗3g",
+    "carb": 0.8,
+    "protein": 0.6,
+    "fat": 1.3,
+    "note": null
+  },
+  {
+    "name": "开心果仁",
+    "category": "脂肪",
+    "spec": "一颗3g",
+    "carb": 0.8,
+    "protein": 0.6,
+    "fat": 1.3,
+    "note": null
+  },
+  {
+    "name": "花生酱",
+    "category": "脂肪",
+    "spec": "100g",
+    "carb": 23,
+    "protein": 25.2,
+    "fat": 48.6,
+    "note": null
+  },
+  {
+    "name": "奇亚籽",
+    "category": "脂肪",
+    "spec": "一份10g",
+    "carb": 0.12,
+    "protein": 1.76,
+    "fat": 2.81,
+    "note": null
+  },
+  {
+    "name": "南瓜子",
+    "category": "脂肪",
+    "spec": "一份10g",
+    "carb": 0.5,
+    "protein": 3.8,
+    "fat": 5,
+    "note": null
+  },
+  {
+    "name": "巧克力",
+    "category": "脂肪",
+    "spec": "一块5g",
+    "carb": 0.78,
+    "protein": 1.2,
+    "fat": 2.21,
+    "note": null
+  },
+  {
+    "name": "腰果",
+    "category": "脂肪",
+    "spec": "100g",
+    "carb": 41.6,
+    "protein": 17.3,
+    "fat": 36.7,
+    "note": null
+  },
+  {
+    "name": "全脂牛奶",
+    "category": "混合",
+    "spec": "100ml",
+    "carb": 4.9,
+    "protein": 3.3,
+    "fat": 3.6,
+    "note": "低脂脱脂牛奶/酸奶根据外包装营养表调整"
+  },
+  {
+    "name": "炸鸡（不去皮）",
+    "category": "混合",
+    "spec": "100g",
+    "carb": 15,
+    "protein": 14,
+    "fat": 11,
+    "note": "来源：麦当劳官网的炸鸡排"
+  },
+  {
+    "name": "汉堡王小皇堡",
+    "category": "混合",
+    "spec": "标准138g",
+    "carb": 27,
+    "protein": 9,
+    "fat": 16,
+    "note": "来源：汉堡王官网"
+  },
+  {
+    "name": "汉堡王单层皇堡",
+    "category": "混合",
+    "spec": "标准290g",
+    "carb": 50,
+    "protein": 22,
+    "fat": 37,
+    "note": "来源：汉堡王官网"
+  },
+  {
+    "name": "汉堡王双层皇堡",
+    "category": "混合",
+    "spec": "标准355g",
+    "carb": 49,
+    "protein": 48,
+    "fat": 58,
+    "note": "来源：汉堡王官网"
+  },
+  {
+    "name": "黄油饼干",
+    "category": "混合",
+    "spec": "100g",
+    "carb": 5,
+    "protein": 20,
+    "fat": 14,
+    "note": null
+  },
+  {
+    "name": "亲嘴烧",
+    "category": "混合",
+    "spec": "一包",
+    "carb": 5.3,
+    "protein": 1,
+    "fat": 2.75,
+    "note": null
+  },
+  {
+    "name": "黄金脆皮鸡",
+    "category": "KFC",
+    "spec": "一份",
+    "carb": 5,
+    "protein": 20,
+    "fat": 14,
+    "note": null
+  },
+  {
+    "name": "原味鸡汉堡",
+    "category": "KFC",
+    "spec": "一份",
+    "carb": 51,
+    "protein": 27,
+    "fat": 25,
+    "note": null
+  },
+  {
+    "name": "德克士脆皮鸡腿",
+    "category": "德克士",
+    "spec": "一份",
+    "carb": 5,
+    "protein": 20,
+    "fat": 14,
+    "note": null
+  },
+  {
+    "name": "德克士手枪腿",
+    "category": "德克士",
+    "spec": "一份",
+    "carb": 10,
+    "protein": 39,
+    "fat": 28,
+    "note": null
+  },
+  {
+    "name": "虾堡",
+    "category": "德克士",
+    "spec": "一份",
+    "carb": 53,
+    "protein": 14,
+    "fat": 12,
+    "note": null
+  },
+  {
+    "name": "菠萝鸡腿堡",
+    "category": "德克士",
+    "spec": "一份",
+    "carb": 51,
+    "protein": 20,
+    "fat": 24,
+    "note": null
+  },
+  {
+    "name": "菠萝安格斯牛堡",
+    "category": "德克士",
+    "spec": "一份",
+    "carb": 45,
+    "protein": 20,
+    "fat": 26,
+    "note": null
+  },
+  {
+    "name": "手枪鸡块",
+    "category": "德克士",
+    "spec": "一份",
+    "carb": 16,
+    "protein": 11,
+    "fat": 14,
+    "note": null
+  },
+  {
+    "name": "芋泥波真乳茶",
+    "category": "喜茶",
+    "spec": "一杯(少冰 不加糖)",
+    "carb": 43.2,
+    "protein": 7.3,
+    "fat": 13,
+    "note": null
+  },
+  {
+    "name": "浓抹绿妍",
+    "category": "喜茶",
+    "spec": "一杯(少冰 不加糖)",
+    "carb": 18,
+    "protein": 3.9,
+    "fat": 8.5,
+    "note": null
+  },
+  {
+    "name": "芝芝抹茶",
+    "category": "喜茶",
+    "spec": "一杯(少冰 不加糖)",
+    "carb": 29,
+    "protein": 10.9,
+    "fat": 22.5,
+    "note": null
+  },
+  {
+    "name": "有喜柿椰",
+    "category": "喜茶",
+    "spec": "一杯(少冰 不加糖)",
+    "carb": 35,
+    "protein": 1.3,
+    "fat": 3.5,
+    "note": null
+  },
+  {
+    "name": "桂花酿",
+    "category": "喜茶",
+    "spec": "一杯(少少冰 不加糖)",
+    "carb": 39,
+    "protein": 6.9,
+    "fat": 15.2,
+    "note": null
+  },
+  {
+    "name": "美颜纤体瓶",
+    "category": "喜茶",
+    "spec": "中杯（去冰 不加糖）",
+    "carb": 24.5,
+    "protein": 0,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "去火纤体瓶",
+    "category": "喜茶",
+    "spec": "中杯（去冰 不加糖）",
+    "carb": 24,
+    "protein": 0,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "羽衣纤体瓶",
+    "category": "喜茶",
+    "spec": "中杯（去冰 不加糖）",
+    "carb": 25.5,
+    "protein": 0,
+    "fat": 0,
+    "note": null
+  },
+  {
+    "name": "小奶茉",
+    "category": "喜茶",
+    "spec": "中杯（去冰 不加糖）",
+    "carb": 11,
+    "protein": 5.5,
+    "fat": 12.5,
+    "note": null
+  },
+  {
+    "name": "水牛乳双拼波波",
+    "category": "喜茶",
+    "spec": "中杯（少冰 不加糖）",
+    "carb": 58,
+    "protein": 10.8,
+    "fat": 14,
+    "note": null
+  },
+  {
+    "name": "水牛乳双拼抹茶",
+    "category": "喜茶",
+    "spec": "中杯（少冰 不加糖）",
+    "carb": 37.9,
+    "protein": 9.6,
+    "fat": 13,
+    "note": null
+  },
+  {
+    "name": "烤黑糖波波牛乳",
+    "category": "喜茶",
+    "spec": "一杯(少少冰 不加糖)",
+    "carb": 52.5,
+    "protein": 10.8,
+    "fat": 15.5,
+    "note": null
+  },
+  {
+    "name": "烤黑糖波波牛乳茶",
+    "category": "喜茶",
+    "spec": "一杯(少冰 不加糖)",
+    "carb": 48.5,
+    "protein": 8.6,
+    "fat": 18,
+    "note": null
+  },
+  {
+    "name": "黑糖波波牛乳",
+    "category": "喜茶",
+    "spec": "一杯(少少冰 不加糖)",
+    "carb": 44.5,
+    "protein": 9.9,
+    "fat": 18.6,
+    "note": null
+  },
+  {
+    "name": "耶耶茫茫",
+    "category": "喜茶",
+    "spec": "一杯(少少冰 不加糖)",
+    "carb": 36.5,
+    "protein": 1.5,
+    "fat": 7,
+    "note": null
+  },
+  {
+    "name": "金凤茶王（奶茶）",
+    "category": "喜茶",
+    "spec": "中杯（少冰 不加糖）",
+    "carb": 12.5,
+    "protein": 4.5,
+    "fat": 15,
+    "note": null
+  },
+  {
+    "name": "白雾红尘（奶茶）",
+    "category": "喜茶",
+    "spec": "中杯",
+    "carb": 8.7,
+    "protein": 3.1,
+    "fat": 8.7,
+    "note": null
+  },
+  {
+    "name": "花田乌龙（奶茶）",
+    "category": "喜茶",
+    "spec": "大杯（少冰 不加糖）",
+    "carb": 7.1,
+    "protein": 3.7,
+    "fat": 10.5,
+    "note": null
+  },
+  {
+    "name": "针王苹果",
+    "category": "茉莉奶白",
+    "spec": "中杯（少冰 不加糖）",
+    "carb": 29,
+    "protein": 0.8,
+    "fat": 0.6,
+    "note": null
+  }
+]
