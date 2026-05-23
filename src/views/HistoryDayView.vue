@@ -20,7 +20,8 @@ const foods = useFoodStore();
 const settings = useSettingsStore();
 
 onMounted(async () => {
-  await Promise.all([foods.load(), settings.load()]);
+  await Promise.all([foods.load()]);
+  settings.load();
   log.value = (await getLog(date.value)) ?? null;
 });
 

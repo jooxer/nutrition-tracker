@@ -15,7 +15,7 @@ const draft = ref<MealRatios>(JSON.parse(JSON.stringify(DEFAULT_MEAL_RATIOS)));
 
 onMounted(async () => {
   await foods.load();
-  await settings.load();
+  settings.load();
   draft.value = JSON.parse(JSON.stringify(settings.ratios));
 });
 
@@ -47,8 +47,7 @@ async function exportJson() {
     schemaVersion: DB_VERSION,
     foods: await db.getAll('foods'),
     recipes: await db.getAll('recipes'),
-    daily_logs: await db.getAll('daily_logs'),
-    settings: await db.getAll('settings')
+    daily_logs: await db.getAll('daily_logs')
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -73,14 +72,13 @@ async function importJson(ev: Event) {
   if (!confirm('将覆盖现有所有数据，继续？')) return;
   await resetDBForTests();
   const db = await getDB();
-  const tx = db.transaction(['foods','recipes','daily_logs','settings'], 'readwrite');
+  const tx = db.transaction(['foods','recipes','daily_logs'], 'readwrite');
   for (const f of data.foods)       await tx.objectStore('foods').put(f);
   for (const r of data.recipes)     await tx.objectStore('recipes').put(r);
   for (const l of data.daily_logs)  await tx.objectStore('daily_logs').put(l);
-  for (const s of (data.settings ?? []))  await tx.objectStore('settings').put(s);
   await tx.done;
   await foods.load();
-  await settings.reload();
+  settings.reload();
   draft.value = JSON.parse(JSON.stringify(settings.ratios));
   toast.show('已导入');
 }
@@ -90,7 +88,7 @@ async function resetAll() {
   await resetDBForTests();
   await runSeedIfEmpty();
   await foods.load();
-  await settings.reload();
+  settings.reload();
   draft.value = JSON.parse(JSON.stringify(settings.ratios));
   toast.show('已重置');
 }

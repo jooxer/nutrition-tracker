@@ -27,7 +27,7 @@ const editing = ref<Entry | null>(null);
 onMounted(async () => {
   await foods.load();
   await recipeStore.load();
-  await settings.load();
+  settings.load();
   await daily.loadDay(todayKey());
 });
 

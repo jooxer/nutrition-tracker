@@ -7,7 +7,7 @@ import Toast from '@/components/Toast.vue';
 const settings = useSettingsStore();
 onMounted(async () => {
   await runSeedIfEmpty();
-  await settings.load();
+  settings.load();
 });
 </script>
 

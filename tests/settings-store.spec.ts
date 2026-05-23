@@ -1,42 +1,41 @@
 import { setActivePinia, createPinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { resetDBForTests } from '@/db/db';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { DEFAULT_MEAL_RATIOS } from '@/constants/goals';
 
-beforeEach(async () => {
-  await resetDBForTests();
+beforeEach(() => {
+  localStorage.clear();
   setActivePinia(createPinia());
 });
 
 describe('settingsStore', () => {
-  it('load returns defaults when nothing saved', async () => {
+  it('load returns defaults when nothing saved', () => {
     const s = useSettingsStore();
-    await s.load();
+    s.load();
     expect(s.ratios).toEqual(DEFAULT_MEAL_RATIOS);
   });
 
-  it('saveRatios persists and survives reload', async () => {
+  it('saveRatios persists and survives reload', () => {
     const s = useSettingsStore();
-    await s.load();
+    s.load();
     const next = JSON.parse(JSON.stringify(DEFAULT_MEAL_RATIOS));
     next.training.carb.breakfast = 25;
     next.training.carb.lunch = 35;
-    await s.saveRatios(next);
+    s.saveRatios(next);
 
-    await s.reload();
+    s.reload();
     expect(s.ratios.training.carb.breakfast).toBe(25);
     expect(s.ratios.training.carb.lunch).toBe(35);
   });
 
-  it('resetRatios clears back to defaults', async () => {
+  it('resetRatios clears back to defaults', () => {
     const s = useSettingsStore();
-    await s.load();
+    s.load();
     const modified = JSON.parse(JSON.stringify(DEFAULT_MEAL_RATIOS));
     modified.rest.protein.snack = 99;
-    await s.saveRatios(modified);
+    s.saveRatios(modified);
 
-    await s.resetRatios();
+    s.resetRatios();
     expect(s.ratios).toEqual(DEFAULT_MEAL_RATIOS);
   });
 });
