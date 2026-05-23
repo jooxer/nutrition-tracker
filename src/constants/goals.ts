@@ -15,15 +15,15 @@ export const MEAL_LABEL: Record<MealType, string> = {
 };
 
 export interface Goal {
-  carbMul: number;
-  proteinMul: number;
+  carbGram: number;
+  proteinGram: number;
   fatGram: number;
   totalKcal: number;
 }
 
 export const GOALS: Record<DayType, Goal> = {
-  training: { carbMul: 2.2, proteinMul: 1.5, fatGram: 60, totalKcal: 2363 * 0.64 },
-  rest:     { carbMul: 1.8, proteinMul: 1.5, fatGram: 60, totalKcal: 2163 * 0.64 }
+  training: { carbGram: 139, proteinGram: 98, fatGram: 60, totalKcal: 2363 * 0.64 },
+  rest:     { carbGram: 109, proteinGram: 98, fatGram: 60, totalKcal: 2163 * 0.64 }
 };
 
 export type MealRatios = Record<DayType, Record<'carb' | 'protein', Record<MealType, number>>>;
@@ -46,8 +46,8 @@ export const MEAL_RATIOS = DEFAULT_MEAL_RATIOS;
 export function targetsFor(dayType: DayType) {
   const g = GOALS[dayType];
   return {
-    carb: g.carbMul * WEIGHT_KG,
-    protein: g.proteinMul * WEIGHT_KG,
+    carb: g.carbGram,
+    protein: g.proteinGram,
     fat: g.fatGram,
     kcal: g.totalKcal
   };
