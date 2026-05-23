@@ -3,7 +3,7 @@ import type { Entry, FoodRow } from '@/db/db';
 import { entryTotals } from '@/lib/calc';
 import { computed } from 'vue';
 
-const props = defineProps<{ entry: Entry; food?: FoodRow }>();
+const props = defineProps<{ entry: Entry; food?: FoodRow; readonly?: boolean }>();
 defineEmits<{ edit: [Entry] }>();
 
 function totalWeight(spec: string, amount: number): string | null {
@@ -43,7 +43,24 @@ const d = computed(() => {
 </script>
 
 <template>
-  <button type="button"
+  <div v-if="readonly" class="block w-full text-left px-4 py-3 bg-white border-b border-slate-100 last:border-b-0">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium truncate">{{ d.name }}</span>
+          <span v-if="d.adhoc" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 flex-shrink-0">临时</span>
+        </div>
+        <div class="text-xs text-slate-400 mt-0.5">{{ d.spec }}</div>
+      </div>
+      <span v-if="d.weight" class="text-sm font-bold text-slate-800 flex-shrink-0">{{ d.weight }}</span>
+    </div>
+    <div class="flex gap-1.5 mt-2 text-[11px]">
+      <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">碳水 <b class="font-semibold">{{ d.n.carb.toFixed(1) }}</b>g</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">蛋白质 <b class="font-semibold">{{ d.n.protein.toFixed(1) }}</b>g</span>
+      <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">脂肪 <b class="font-semibold">{{ d.n.fat.toFixed(1) }}</b>g</span>
+    </div>
+  </div>
+  <button v-else type="button"
     class="block w-full text-left px-4 py-3 bg-white border-b border-slate-100 last:border-b-0 active:bg-slate-50 transition"
     @click="$emit('edit', entry)">
     <div class="flex items-start justify-between gap-3">
@@ -60,15 +77,9 @@ const d = computed(() => {
       </div>
     </div>
     <div class="flex gap-1.5 mt-2 text-[11px]">
-      <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
-        碳水 <b class="font-semibold">{{ d.n.carb.toFixed(1) }}</b>g
-      </span>
-      <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
-        蛋白质 <b class="font-semibold">{{ d.n.protein.toFixed(1) }}</b>g
-      </span>
-      <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
-        脂肪 <b class="font-semibold">{{ d.n.fat.toFixed(1) }}</b>g
-      </span>
+      <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">碳水 <b class="font-semibold">{{ d.n.carb.toFixed(1) }}</b>g</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">蛋白质 <b class="font-semibold">{{ d.n.protein.toFixed(1) }}</b>g</span>
+      <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">脂肪 <b class="font-semibold">{{ d.n.fat.toFixed(1) }}</b>g</span>
     </div>
   </button>
 </template>

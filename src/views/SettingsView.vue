@@ -1,15 +1,45 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { getDB, resetDBForTests, DB_VERSION } from '@/db/db';
 import { useFoodStore } from '@/stores/foodStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useToast } from '@/stores/toastStore';
 import { runSeedIfEmpty } from '@/lib/seed';
+import { MEALS, DEFAULT_MEAL_RATIOS, type DayType, type MealType, type MealRatios } from '@/constants/goals';
 
 const foods = useFoodStore();
+const settings = useSettingsStore();
 const toast = useToast();
 const showDeleted = ref<boolean>(false);
+const draft = ref<MealRatios>(JSON.parse(JSON.stringify(DEFAULT_MEAL_RATIOS)));
 
-onMounted(() => foods.load());
+onMounted(async () => {
+  await foods.load();
+  await settings.load();
+  draft.value = JSON.parse(JSON.stringify(settings.ratios));
+});
+
+function sumOf(dt: DayType, kind: 'carb' | 'protein') {
+  return MEALS.reduce((s, m) => s + (Number(draft.value[dt][kind][m.value]) || 0), 0);
+}
+const dirty = computed(() => JSON.stringify(draft.value) !== JSON.stringify(settings.ratios));
+const allValid = computed(() =>
+  ['training','rest'].every(dt =>
+    (['carb','protein'] as const).every(k => sumOf(dt as DayType, k) === 100)
+  )
+);
+
+async function saveRatios() {
+  if (!allValid.value) { toast.show('每行需合计 100', 'error'); return; }
+  await settings.saveRatios(draft.value);
+  toast.show('已保存');
+}
+async function resetRatios() {
+  if (!confirm('恢复默认占比？')) return;
+  await settings.resetRatios();
+  draft.value = JSON.parse(JSON.stringify(settings.ratios));
+  toast.show('已恢复默认');
+}
 
 async function exportJson() {
   const db = await getDB();
@@ -17,7 +47,8 @@ async function exportJson() {
     schemaVersion: DB_VERSION,
     foods: await db.getAll('foods'),
     recipes: await db.getAll('recipes'),
-    daily_logs: await db.getAll('daily_logs')
+    daily_logs: await db.getAll('daily_logs'),
+    settings: await db.getAll('settings')
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -42,12 +73,15 @@ async function importJson(ev: Event) {
   if (!confirm('将覆盖现有所有数据，继续？')) return;
   await resetDBForTests();
   const db = await getDB();
-  const tx = db.transaction(['foods','recipes','daily_logs'], 'readwrite');
+  const tx = db.transaction(['foods','recipes','daily_logs','settings'], 'readwrite');
   for (const f of data.foods)       await tx.objectStore('foods').put(f);
   for (const r of data.recipes)     await tx.objectStore('recipes').put(r);
   for (const l of data.daily_logs)  await tx.objectStore('daily_logs').put(l);
+  for (const s of (data.settings ?? []))  await tx.objectStore('settings').put(s);
   await tx.done;
   await foods.load();
+  await settings.reload();
+  draft.value = JSON.parse(JSON.stringify(settings.ratios));
   toast.show('已导入');
 }
 
@@ -56,6 +90,8 @@ async function resetAll() {
   await resetDBForTests();
   await runSeedIfEmpty();
   await foods.load();
+  await settings.reload();
+  draft.value = JSON.parse(JSON.stringify(settings.ratios));
   toast.show('已重置');
 }
 
@@ -63,10 +99,45 @@ async function restore(id: string) {
   await foods.restore(id);
   toast.show('已恢复');
 }
+
+const dayLabels: Record<DayType, string> = { training: '力训日', rest: '休息日' };
+const kindLabels = { carb: '碳水', protein: '蛋白质' } as const;
 </script>
 
 <template>
   <div class="p-4 space-y-4">
+    <div class="rounded-2xl bg-white shadow-sm p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="font-semibold">餐次占比</div>
+        <button class="text-xs text-slate-500" @click="resetRatios">恢复默认</button>
+      </div>
+      <div class="text-xs text-slate-400">每行需合计 100%</div>
+
+      <div v-for="dt in (['training','rest'] as const)" :key="dt" class="space-y-2">
+        <div class="text-xs font-semibold text-slate-600 mt-1">{{ dayLabels[dt] }}</div>
+        <div v-for="k in (['carb','protein'] as const)" :key="k"
+             class="flex items-center gap-1.5 text-xs">
+          <span class="w-12 text-slate-500 flex-shrink-0">{{ kindLabels[k] }}</span>
+          <input v-for="m in MEALS" :key="m.value"
+            v-model.number="draft[dt][k][m.value as MealType]"
+            type="number" min="0" max="100"
+            class="flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-slate-100 text-center tabular-nums" />
+          <span :class="['w-10 text-right tabular-nums flex-shrink-0',
+                         sumOf(dt, k) === 100 ? 'text-slate-400' : 'text-red-500 font-semibold']">
+            {{ sumOf(dt, k) }}%
+          </span>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <span class="flex-1 text-[11px] text-slate-400 self-center">
+          列：{{ MEALS.map(m => m.label).join(' / ') }}
+        </span>
+        <button class="px-4 py-2 rounded-full bg-emerald-500 text-white disabled:opacity-40"
+          :disabled="!dirty || !allValid" @click="saveRatios">保存</button>
+      </div>
+    </div>
+
     <div class="rounded-2xl bg-white shadow-sm p-4 space-y-3">
       <div class="font-semibold">数据</div>
       <button class="w-full py-2 rounded-full bg-emerald-500 text-white" @click="exportJson">导出 JSON</button>

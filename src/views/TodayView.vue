@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useDailyStore } from '@/stores/dailyStore';
 import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useToast } from '@/stores/toastStore';
 import { todayKey, friendlyDate } from '@/lib/date';
 import { WEIGHT_KG, targetsFor, mealTargetsFor, MEALS, type MealType } from '@/constants/goals';
@@ -17,6 +18,7 @@ import FoodPicker from '@/components/FoodPicker.vue';
 const daily = useDailyStore();
 const foods = useFoodStore();
 const recipeStore = useRecipeStore();
+const settings = useSettingsStore();
 const toast = useToast();
 const showPicker = ref(false);
 const pickerMeal = ref<MealType>('breakfast');
@@ -25,6 +27,7 @@ const editing = ref<Entry | null>(null);
 onMounted(async () => {
   await foods.load();
   await recipeStore.load();
+  await settings.load();
   await daily.loadDay(todayKey());
 });
 
@@ -40,7 +43,7 @@ const dayType = computed({
 });
 
 function targetOf(meal: MealType) {
-  return mealTargetsFor(daily.log?.dayType ?? 'rest', meal);
+  return mealTargetsFor(daily.log?.dayType ?? 'rest', meal, settings.ratios);
 }
 
 function openPicker(meal: MealType) {
@@ -50,6 +53,12 @@ function openPicker(meal: MealType) {
 
 async function onPickFood(foodId: string, amount: number, meal: MealType) {
   await daily.addFoodEntry(foodId, amount, meal);
+}
+async function onPickFoods(items: { foodId: string; amount: number }[], meal: MealType) {
+  for (const it of items) {
+    if (it.amount <= 0) continue;
+    await daily.addFoodEntry(it.foodId, it.amount, meal);
+  }
 }
 function onEdit(e: Entry) { editing.value = e; }
 async function onSaveEdit(id: string, patch: { amount: number; mealType: MealType }) {
@@ -115,7 +124,7 @@ const editingFood = computed(() => {
       @click="openPicker('breakfast')">+</button>
 
     <FoodPicker :open="showPicker" :default-meal="pickerMeal" @close="showPicker = false"
-      @pick-food="onPickFood" @pick-recipe="onPickRecipe" @pick-adhoc="onPickAdhoc" />
+      @pick-food="onPickFood" @pick-foods="onPickFoods" @pick-recipe="onPickRecipe" @pick-adhoc="onPickAdhoc" />
 
     <EntryEditor :entry="editing" :food="editingFood"
       @close="editing = null" @save="onSaveEdit" @remove="onRemoveEdit" />

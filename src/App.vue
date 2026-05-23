@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { runSeedIfEmpty } from '@/lib/seed';
+import { useSettingsStore } from '@/stores/settingsStore';
 import BottomTabBar from '@/components/BottomTabBar.vue';
 import Toast from '@/components/Toast.vue';
-onMounted(async () => { await runSeedIfEmpty(); });
+const settings = useSettingsStore();
+onMounted(async () => {
+  await runSeedIfEmpty();
+  await settings.load();
+});
 </script>
 
 <template>

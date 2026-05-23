@@ -7,6 +7,7 @@ import type { DayType, MealType } from '@/constants/goals';
 import { addDays } from '@/lib/date';
 import { entryTotals, kcalOf, multipliers, sumTotals, type Nutrients } from '@/lib/calc';
 import { WEIGHT_KG } from '@/constants/goals';
+import { groupByMeal } from '@/lib/meals';
 
 export const useDailyStore = defineStore('daily', () => {
   const log = ref<DailyLogRow | null>(null);
@@ -38,23 +39,7 @@ export const useDailyStore = defineStore('daily', () => {
   const muls = computed(() => multipliers(totals.value, WEIGHT_KG));
 
   // 按餐次分组的明细 + 汇总
-  const byMeal = computed(() => {
-    const groups: Record<MealType | 'unset', { entries: Entry[]; totals: Nutrients }> = {
-      breakfast: { entries: [], totals: { carb: 0, protein: 0, fat: 0 } },
-      lunch:     { entries: [], totals: { carb: 0, protein: 0, fat: 0 } },
-      dinner:    { entries: [], totals: { carb: 0, protein: 0, fat: 0 } },
-      snack:     { entries: [], totals: { carb: 0, protein: 0, fat: 0 } },
-      unset:     { entries: [], totals: { carb: 0, protein: 0, fat: 0 } }
-    };
-    for (const e of log.value?.entries ?? []) {
-      const key = e.mealType ?? 'unset';
-      groups[key].entries.push(e);
-    }
-    for (const k of Object.keys(groups) as (MealType | 'unset')[]) {
-      groups[k].totals = sumTotals(groups[k].entries.map(nutrientsFor));
-    }
-    return groups;
-  });
+  const byMeal = computed(() => groupByMeal(log.value?.entries ?? [], nutrientsFor));
 
   async function addFoodEntry(foodId: string, amount: number, mealType?: MealType) {
     if (!log.value) return;

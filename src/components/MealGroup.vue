@@ -9,6 +9,7 @@ const props = defineProps<{
   totals: { carb: number; protein: number; fat: number };
   target: { carb: number; protein: number; carbPct: number; proteinPct: number };
   foodById: (id: string) => FoodRow | undefined;
+  readonly?: boolean;
 }>();
 defineEmits<{ edit: [Entry]; add: [] }>();
 
@@ -35,7 +36,7 @@ function statusOf(cur: number, tgt: number): 'empty' | 'partial' | 'done' | 'ove
           <span class="text-sm font-semibold text-slate-700">{{ label }}</span>
           <span v-if="entries.length" class="text-[11px] text-slate-400">{{ entries.length }} 项</span>
         </div>
-        <button
+        <button v-if="!readonly"
           class="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 active:bg-emerald-100 transition"
           @click="$emit('add')"
         >+ 添加</button>
@@ -82,6 +83,7 @@ function statusOf(cur: number, tgt: number): 'empty' | 'partial' | 'done' | 'ove
     <div v-if="!entries.length" class="px-4 py-5 text-center text-xs text-slate-300">未添加</div>
     <EntryRow v-for="e in entries" :key="e.id"
       :entry="e" :food="e.kind === 'food' ? foodById(e.foodId) : undefined"
+      :readonly="readonly"
       @edit="(en) => $emit('edit', en)" />
   </div>
 </template>

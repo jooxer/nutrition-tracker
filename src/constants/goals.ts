@@ -26,8 +26,10 @@ export const GOALS: Record<DayType, Goal> = {
   rest:     { carbMul: 1.8, proteinMul: 1.5, fatGram: 60, totalKcal: 2163 * 0.64 }
 };
 
+export type MealRatios = Record<DayType, Record<'carb' | 'protein', Record<MealType, number>>>;
+
 // 各餐占比（百分比，加起来 = 100）
-export const MEAL_RATIOS: Record<DayType, Record<'carb' | 'protein', Record<MealType, number>>> = {
+export const DEFAULT_MEAL_RATIOS: MealRatios = {
   training: {
     carb:    { breakfast: 20, lunch: 40, dinner: 30, snack: 10 },
     protein: { breakfast: 20, lunch: 30, dinner: 30, snack: 20 }
@@ -37,6 +39,9 @@ export const MEAL_RATIOS: Record<DayType, Record<'carb' | 'protein', Record<Meal
     protein: { breakfast: 20, lunch: 30, dinner: 30, snack: 20 }
   }
 };
+
+// 兼容旧引用名
+export const MEAL_RATIOS = DEFAULT_MEAL_RATIOS;
 
 export function targetsFor(dayType: DayType) {
   const g = GOALS[dayType];
@@ -48,13 +53,13 @@ export function targetsFor(dayType: DayType) {
   };
 }
 
-export function mealTargetsFor(dayType: DayType, meal: MealType) {
+export function mealTargetsFor(dayType: DayType, meal: MealType, ratios: MealRatios = DEFAULT_MEAL_RATIOS) {
   const total = targetsFor(dayType);
-  const ratios = MEAL_RATIOS[dayType];
+  const r = ratios[dayType];
   return {
-    carb: total.carb * ratios.carb[meal] / 100,
-    protein: total.protein * ratios.protein[meal] / 100,
-    carbPct: ratios.carb[meal],
-    proteinPct: ratios.protein[meal]
+    carb: total.carb * r.carb[meal] / 100,
+    protein: total.protein * r.protein[meal] / 100,
+    carbPct: r.carb[meal],
+    proteinPct: r.protein[meal]
   };
 }
