@@ -43,7 +43,7 @@ const targetMuls = computed(() => ({
         <div class="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">明细</div>
         <EntryRow v-for="e in log.entries" :key="e.id"
           :entry="e" :food="e.kind === 'food' ? foods.byId(e.foodId) : undefined"
-          @remove="() => {}" />
+          @edit="() => {}" />
       </div>
     </template>
   </div>

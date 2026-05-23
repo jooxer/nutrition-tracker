@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDBForTests } from '@/db/db';
-import { getOrCreateLog, addEntry, removeEntry, setDayType, listLogsBetween, getLog } from '@/db/logs';
+import { getOrCreateLog, addEntry, removeEntry, updateEntry, setDayType, listLogsBetween, getLog } from '@/db/logs';
 
 beforeEach(async () => { await resetDBForTests(); });
 
@@ -33,6 +33,22 @@ describe('daily_logs', () => {
     const eid = await addEntry('2026-05-22', { kind: 'food', foodId: 'f1', amount: 1 });
     await removeEntry('2026-05-22', eid);
     expect((await getLog('2026-05-22'))!.entries.length).toBe(0);
+  });
+
+  it('updateEntry patches amount and mealType', async () => {
+    await getOrCreateLog('2026-05-22', 'rest');
+    const eid = await addEntry('2026-05-22', { kind: 'food', foodId: 'f1', amount: 1, mealType: 'breakfast' });
+    await updateEntry('2026-05-22', eid, { amount: 2.5, mealType: 'dinner' });
+    const log = await getLog('2026-05-22');
+    expect(log!.entries[0]).toMatchObject({ id: eid, amount: 2.5, mealType: 'dinner' });
+  });
+
+  it('updateEntry no-op for unknown id', async () => {
+    await getOrCreateLog('2026-05-22', 'rest');
+    await addEntry('2026-05-22', { kind: 'food', foodId: 'f1', amount: 1 });
+    await updateEntry('2026-05-22', 'nonexistent', { amount: 99 });
+    const log = await getLog('2026-05-22');
+    expect(log!.entries[0].amount).toBe(1);
   });
 
   it('setDayType updates type', async () => {

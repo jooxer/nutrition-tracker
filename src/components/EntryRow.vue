@@ -4,7 +4,7 @@ import { entryTotals } from '@/lib/calc';
 import { computed } from 'vue';
 
 const props = defineProps<{ entry: Entry; food?: FoodRow }>();
-defineEmits<{ remove: [string] }>();
+defineEmits<{ edit: [Entry] }>();
 
 function totalWeight(spec: string, amount: number): string | null {
   const m = spec.match(/(\d+(?:\.\d+)?)\s*g\b/i);
@@ -43,7 +43,9 @@ const d = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 py-3 bg-white border-b border-slate-100 last:border-b-0">
+  <button type="button"
+    class="block w-full text-left px-4 py-3 bg-white border-b border-slate-100 last:border-b-0 active:bg-slate-50 transition"
+    @click="$emit('edit', entry)">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
@@ -54,11 +56,7 @@ const d = computed(() => {
       </div>
       <div class="flex items-center gap-1 flex-shrink-0">
         <span v-if="d.weight" class="text-sm font-bold text-slate-800">{{ d.weight }}</span>
-        <button
-          class="text-slate-300 hover:text-red-500 px-2 py-1 text-lg leading-none"
-          aria-label="删除"
-          @click="$emit('remove', entry.id)"
-        >✕</button>
+        <svg class="text-slate-300" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
       </div>
     </div>
     <div class="flex gap-1.5 mt-2 text-[11px]">
@@ -72,5 +70,5 @@ const d = computed(() => {
         脂肪 <b class="font-semibold">{{ d.n.fat.toFixed(1) }}</b>g
       </span>
     </div>
-  </div>
+  </button>
 </template>

@@ -37,6 +37,20 @@ export async function removeEntry(date: string, entryId: string): Promise<void> 
   await db.put('daily_logs', log);
 }
 
+export async function updateEntry(
+  date: string,
+  entryId: string,
+  patch: { amount?: number; mealType?: import('@/constants/goals').MealType }
+): Promise<void> {
+  const db = await getDB();
+  const log = await db.get('daily_logs', date);
+  if (!log) return;
+  const idx = log.entries.findIndex(e => e.id === entryId);
+  if (idx === -1) return;
+  log.entries[idx] = { ...log.entries[idx], ...patch };
+  await db.put('daily_logs', log);
+}
+
 export async function setDayType(date: string, dayType: DayType): Promise<void> {
   const db = await getDB();
   const log = await db.get('daily_logs', date);

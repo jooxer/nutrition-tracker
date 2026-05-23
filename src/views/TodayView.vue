@@ -6,10 +6,11 @@ import { useRecipeStore } from '@/stores/recipeStore';
 import { useToast } from '@/stores/toastStore';
 import { todayKey, friendlyDate } from '@/lib/date';
 import { WEIGHT_KG, targetsFor, mealTargetsFor, MEALS, type MealType } from '@/constants/goals';
-import type { RecipeRow } from '@/db/db';
+import type { RecipeRow, Entry } from '@/db/db';
 import MetabolicDial from '@/components/MetabolicDial.vue';
 import MealGroup from '@/components/MealGroup.vue';
 import EntryRow from '@/components/EntryRow.vue';
+import EntryEditor from '@/components/EntryEditor.vue';
 import SegmentedControl from '@/components/SegmentedControl.vue';
 import FoodPicker from '@/components/FoodPicker.vue';
 
@@ -19,6 +20,7 @@ const recipeStore = useRecipeStore();
 const toast = useToast();
 const showPicker = ref(false);
 const pickerMeal = ref<MealType>('breakfast');
+const editing = ref<Entry | null>(null);
 
 onMounted(async () => {
   await foods.load();
@@ -49,7 +51,15 @@ function openPicker(meal: MealType) {
 async function onPickFood(foodId: string, amount: number, meal: MealType) {
   await daily.addFoodEntry(foodId, amount, meal);
 }
-async function onRemove(id: string) { await daily.removeEntry(id); }
+function onEdit(e: Entry) { editing.value = e; }
+async function onSaveEdit(id: string, patch: { amount: number; mealType: MealType }) {
+  await daily.updateEntry(id, patch);
+  editing.value = null;
+}
+async function onRemoveEdit(id: string) {
+  await daily.removeEntry(id);
+  editing.value = null;
+}
 
 async function onPickRecipe(r: RecipeRow, meal: MealType) {
   let skipped = 0;
@@ -63,6 +73,12 @@ async function onPickRecipe(r: RecipeRow, meal: MealType) {
 async function onPickAdhoc(d: { name: string; spec: string; carb: number; protein: number; fat: number; amount: number; mealType: MealType }) {
   await daily.addAdhocEntry(d);
 }
+
+const editingFood = computed(() => {
+  const e = editing.value;
+  if (!e || e.kind !== 'food') return undefined;
+  return foods.byId(e.foodId);
+});
 </script>
 
 <template>
@@ -85,14 +101,14 @@ async function onPickAdhoc(d: { name: string; spec: string; carb: number; protei
       :totals="daily.byMeal[m.value].totals"
       :target="targetOf(m.value)"
       :food-by-id="foods.byId"
-      @remove="onRemove"
+      @edit="onEdit"
       @add="openPicker(m.value)" />
 
     <div v-if="daily.byMeal.unset.entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden">
       <div class="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">未分类</div>
       <EntryRow v-for="e in daily.byMeal.unset.entries" :key="e.id"
         :entry="e" :food="e.kind === 'food' ? foods.byId(e.foodId) : undefined"
-        @remove="onRemove" />
+        @edit="onEdit" />
     </div>
 
     <button class="fixed bottom-20 right-5 w-14 h-14 rounded-full bg-emerald-500 text-white text-3xl shadow-lg active:scale-95 transition"
@@ -100,5 +116,8 @@ async function onPickAdhoc(d: { name: string; spec: string; carb: number; protei
 
     <FoodPicker :open="showPicker" :default-meal="pickerMeal" @close="showPicker = false"
       @pick-food="onPickFood" @pick-recipe="onPickRecipe" @pick-adhoc="onPickAdhoc" />
+
+    <EntryEditor :entry="editing" :food="editingFood"
+      @close="editing = null" @save="onSaveEdit" @remove="onRemoveEdit" />
   </div>
 </template>

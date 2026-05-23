@@ -10,7 +10,7 @@ const props = defineProps<{
   target: { carb: number; protein: number; carbPct: number; proteinPct: number };
   foodById: (id: string) => FoodRow | undefined;
 }>();
-defineEmits<{ remove: [string]; add: [] }>();
+defineEmits<{ edit: [Entry]; add: [] }>();
 
 function pctOf(cur: number, tgt: number) {
   return tgt > 0 ? Math.min(100, Math.round((cur / tgt) * 100)) : 0;
@@ -82,6 +82,6 @@ function statusOf(cur: number, tgt: number): 'empty' | 'partial' | 'done' | 'ove
     <div v-if="!entries.length" class="px-4 py-5 text-center text-xs text-slate-300">未添加</div>
     <EntryRow v-for="e in entries" :key="e.id"
       :entry="e" :food="e.kind === 'food' ? foodById(e.foodId) : undefined"
-      @remove="(id) => $emit('remove', id)" />
+      @edit="(en) => $emit('edit', en)" />
   </div>
 </template>

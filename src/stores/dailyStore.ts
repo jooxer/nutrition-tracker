@@ -71,11 +71,16 @@ export const useDailyStore = defineStore('daily', () => {
     await logsDb.removeEntry(log.value.date, entryId);
     log.value = await logsDb.getLog(log.value.date) ?? null;
   }
+  async function updateEntry(entryId: string, patch: { amount?: number; mealType?: MealType }) {
+    if (!log.value) return;
+    await logsDb.updateEntry(log.value.date, entryId, patch);
+    log.value = await logsDb.getLog(log.value.date) ?? null;
+  }
   async function changeDayType(t: DayType) {
     if (!log.value) return;
     await logsDb.setDayType(log.value.date, t);
     log.value = await logsDb.getLog(log.value.date) ?? null;
   }
 
-  return { log, totals, kcal, muls, byMeal, loadDay, addFoodEntry, addAdhocEntry, removeEntry, changeDayType };
+  return { log, totals, kcal, muls, byMeal, loadDay, addFoodEntry, addAdhocEntry, removeEntry, updateEntry, changeDayType };
 });

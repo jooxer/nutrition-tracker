@@ -19,6 +19,7 @@ const recipes = useRecipeStore();
 const tab = ref<'food' | 'recipe' | 'adhoc'>('food');
 const query = ref('');
 const meal = ref<MealType>(props.defaultMeal ?? 'breakfast');
+const collapsed = ref<Set<string>>(new Set(CATEGORIES));
 
 watch(() => props.open, (open) => {
   if (open) meal.value = props.defaultMeal ?? meal.value;
@@ -33,6 +34,18 @@ const grouped = computed(() => {
   for (const f of filtered) (map.get(f.category) ?? map.get('其他')!).push(f);
   return [...map.entries()].filter(([, v]) => v.length > 0);
 });
+const searching = computed(() => query.value.trim().length > 0);
+
+function toggleCat(cat: string) {
+  const next = new Set(collapsed.value);
+  if (next.has(cat)) next.delete(cat); else next.add(cat);
+  collapsed.value = next;
+}
+function expandAll() { collapsed.value = new Set(); }
+function collapseAll() { collapsed.value = new Set(CATEGORIES); }
+function isCollapsed(cat: string) {
+  return !searching.value && collapsed.value.has(cat);
+}
 
 const picked = ref<FoodRow | null>(null);
 const amount = ref(1);
@@ -72,14 +85,31 @@ function confirmAdhoc() {
       </div>
 
       <div v-if="tab === 'food'" class="flex-1 overflow-y-auto">
-        <div class="p-3"><input v-model="query" placeholder="搜索食物..." class="w-full px-3 py-2 rounded-lg bg-slate-100 text-sm" /></div>
+        <div class="p-3 flex items-center gap-2">
+          <input v-model="query" placeholder="搜索食物..." class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
+          <button v-if="!searching && !picked"
+            class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-500 flex-shrink-0"
+            @click="collapsed.size ? expandAll() : collapseAll()">
+            {{ collapsed.size ? '全部展开' : '全部收起' }}
+          </button>
+        </div>
         <template v-if="!picked">
           <div v-for="[cat, list] in grouped" :key="cat">
-            <div class="px-4 py-1 text-xs text-slate-500 bg-slate-50">{{ cat }}</div>
-            <button v-for="f in list" :key="f.id" class="block w-full text-left px-4 py-2 border-b border-slate-50" @click="pick(f)">
-              <div class="text-sm">{{ f.name }}</div>
-              <div class="text-xs text-slate-400">{{ f.spec }} · 碳{{ f.carb }} 蛋{{ f.protein }} 脂{{ f.fat }}</div>
+            <button class="w-full px-4 py-2 flex items-center justify-between bg-slate-50 active:bg-slate-100 transition"
+              @click="toggleCat(cat)">
+              <span class="text-xs text-slate-500">{{ cat }}<span class="ml-1.5 text-slate-400">{{ list.length }}</span></span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round"
+                :class="['text-slate-400 transition-transform', isCollapsed(cat) ? '' : 'rotate-90']">
+                <path d="M9 6l6 6-6 6" />
+              </svg>
             </button>
+            <div v-show="!isCollapsed(cat)">
+              <button v-for="f in list" :key="f.id" class="block w-full text-left px-4 py-2 border-b border-slate-50 active:bg-slate-50" @click="pick(f)">
+                <div class="text-sm">{{ f.name }}</div>
+                <div class="text-xs text-slate-400">{{ f.spec }} · 碳{{ f.carb }} 蛋{{ f.protein }} 脂{{ f.fat }}</div>
+              </button>
+            </div>
           </div>
         </template>
         <div v-else class="p-4">
