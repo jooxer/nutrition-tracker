@@ -2,8 +2,8 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
+import { useCategoriesStore } from '@/stores/categoriesStore';
 import type { FoodRow, RecipeRow } from '@/db/db';
-import { CATEGORIES } from '@/constants/categories';
 import { MEALS, type MealType } from '@/constants/goals';
 
 const props = defineProps<{ open: boolean; defaultMeal?: MealType }>();
@@ -17,10 +17,11 @@ const emit = defineEmits<{
 
 const foods = useFoodStore();
 const recipes = useRecipeStore();
+const cats = useCategoriesStore();
 const tab = ref<'food' | 'recipe' | 'adhoc'>('food');
 const query = ref('');
 const meal = ref<MealType>(props.defaultMeal ?? 'breakfast');
-const collapsed = ref<Set<string>>(new Set(CATEGORIES));
+const collapsed = ref<Set<string>>(new Set(cats.all));
 const multi = ref(false);
 const selected = ref<Map<string, number>>(new Map());
 const stage = ref<'list' | 'amounts'>('list');
@@ -41,8 +42,11 @@ const grouped = computed(() => {
   const q = query.value.trim();
   const filtered = q ? liveFoods.value.filter(f => f.name.includes(q)) : liveFoods.value;
   const map = new Map<string, FoodRow[]>();
-  for (const cat of CATEGORIES) map.set(cat, []);
-  for (const f of filtered) (map.get(f.category) ?? map.get('其他')!).push(f);
+  for (const cat of cats.all) map.set(cat, []);
+  for (const f of filtered) {
+    if (!map.has(f.category)) map.set(f.category, []);
+    map.get(f.category)!.push(f);
+  }
   return [...map.entries()].filter(([, v]) => v.length > 0);
 });
 const searching = computed(() => query.value.trim().length > 0);
@@ -53,7 +57,7 @@ function toggleCat(cat: string) {
   collapsed.value = next;
 }
 function expandAll() { collapsed.value = new Set(); }
-function collapseAll() { collapsed.value = new Set(CATEGORIES); }
+function collapseAll() { collapsed.value = new Set(cats.all); }
 function isCollapsed(cat: string) { return !searching.value && collapsed.value.has(cat); }
 
 function toggleMulti() {

@@ -2,9 +2,9 @@
 import { RouterLink, useRoute } from 'vue-router';
 const route = useRoute();
 const tabs = [
-  { to: '/',         label: '今日',   icon: 'today' },
-  { to: '/foods',    label: '食物',   icon: 'foods' },
   { to: '/recipes',  label: '菜谱',   icon: 'recipes' },
+  { to: '/foods',    label: '食物',   icon: 'foods' },
+  { to: '/',         label: '今日',   icon: 'today' },
   { to: '/history',  label: '历史',   icon: 'history' },
   { to: '/settings', label: '设置',   icon: 'settings' }
 ];

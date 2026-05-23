@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useFoodStore } from '@/stores/foodStore';
+import { useCategoriesStore } from '@/stores/categoriesStore';
 import { useToast } from '@/stores/toastStore';
 import type { FoodRow } from '@/db/db';
-import { CATEGORIES } from '@/constants/categories';
 import FoodEditor from '@/components/FoodEditor.vue';
 
 const foods = useFoodStore();
+const cats = useCategoriesStore();
 const toast = useToast();
 const query = ref('');
 const editorOpen = ref(false);
@@ -17,7 +18,10 @@ onMounted(() => foods.load());
 const grouped = computed(() => {
   const q = query.value.trim();
   const live = foods.foods.filter(f => !f.deleted && (!q || f.name.includes(q)));
-  return CATEGORIES.map(c => [c, live.filter(f => f.category === c)] as const).filter(([, l]) => l.length > 0);
+  const known = new Set(cats.all);
+  const order = [...cats.all];
+  for (const f of live) if (!known.has(f.category)) { order.push(f.category); known.add(f.category); }
+  return order.map(c => [c, live.filter(f => f.category === c)] as const).filter(([, l]) => l.length > 0);
 });
 
 function openNew() { editing.value = null; editorOpen.value = true; }

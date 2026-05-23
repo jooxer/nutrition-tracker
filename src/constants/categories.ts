@@ -3,4 +3,5 @@ export const CATEGORIES = [
   '混合', 'KFC', '德克士', '喜茶', '茉莉奶白', '其他'
 ] as const;
 
-export type Category = typeof CATEGORIES[number];
+export type BuiltinCategory = typeof CATEGORIES[number];
+export type Category = string;
