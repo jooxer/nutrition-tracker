@@ -4,10 +4,11 @@ import { useDailyStore } from '@/stores/dailyStore';
 import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { useToast } from '@/stores/toastStore';
-import { todayKey } from '@/lib/date';
-import { WEIGHT_KG, targetsFor } from '@/constants/goals';
+import { todayKey, friendlyDate } from '@/lib/date';
+import { WEIGHT_KG, targetsFor, mealTargetsFor, MEALS, type MealType } from '@/constants/goals';
 import type { RecipeRow } from '@/db/db';
 import MetabolicDial from '@/components/MetabolicDial.vue';
+import MealGroup from '@/components/MealGroup.vue';
 import EntryRow from '@/components/EntryRow.vue';
 import SegmentedControl from '@/components/SegmentedControl.vue';
 import FoodPicker from '@/components/FoodPicker.vue';
@@ -17,6 +18,7 @@ const foods = useFoodStore();
 const recipeStore = useRecipeStore();
 const toast = useToast();
 const showPicker = ref(false);
+const pickerMeal = ref<MealType>('breakfast');
 
 onMounted(async () => {
   await foods.load();
@@ -35,29 +37,40 @@ const dayType = computed({
   set: async (v) => { await daily.changeDayType(v); }
 });
 
-async function onPickFood(foodId: string, amount: number) {
-  await daily.addFoodEntry(foodId, amount);
+function targetOf(meal: MealType) {
+  return mealTargetsFor(daily.log?.dayType ?? 'rest', meal);
+}
+
+function openPicker(meal: MealType) {
+  pickerMeal.value = meal;
+  showPicker.value = true;
+}
+
+async function onPickFood(foodId: string, amount: number, meal: MealType) {
+  await daily.addFoodEntry(foodId, amount, meal);
 }
 async function onRemove(id: string) { await daily.removeEntry(id); }
 
-async function onPickRecipe(r: RecipeRow) {
+async function onPickRecipe(r: RecipeRow, meal: MealType) {
   let skipped = 0;
   for (const item of r.items) {
     const f = foods.byId(item.foodId);
     if (!f || f.deleted) { skipped++; continue; }
-    await daily.addFoodEntry(item.foodId, item.amount);
+    await daily.addFoodEntry(item.foodId, item.amount, meal);
   }
   if (skipped > 0) toast.show(`跳过 ${skipped} 项已删除食物`, 'error');
 }
-async function onPickAdhoc(d: { name: string; spec: string; carb: number; protein: number; fat: number; amount: number }) {
+async function onPickAdhoc(d: { name: string; spec: string; carb: number; protein: number; fat: number; amount: number; mealType: MealType }) {
   await daily.addAdhocEntry(d);
 }
 </script>
 
 <template>
-  <div class="p-4 space-y-3">
+  <div class="p-4 space-y-3 pb-24">
     <div class="flex items-center justify-between">
-      <div class="text-sm text-slate-500">{{ daily.log?.date }}</div>
+      <div class="text-sm">
+        <span class="text-slate-700 font-medium">{{ daily.log ? friendlyDate(daily.log.date) : '' }}</span>
+      </div>
       <SegmentedControl v-model="dayType" :options="[
         { value: 'training', label: '力训日' },
         { value: 'rest',     label: '休息日' }
@@ -66,18 +79,26 @@ async function onPickAdhoc(d: { name: string; spec: string; carb: number; protei
 
     <MetabolicDial :totals="daily.totals" :targets="targets" :kcal="daily.kcal" :muls="daily.muls" :target-muls="targetMuls" />
 
-    <div class="rounded-2xl bg-white shadow-sm overflow-hidden">
-      <div class="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">今日明细</div>
-      <div v-if="!daily.log?.entries.length" class="px-4 py-8 text-center text-sm text-slate-400">暂无记录，点右下 + 添加</div>
-      <EntryRow v-for="e in daily.log?.entries ?? []" :key="e.id"
+    <MealGroup v-for="m in MEALS" :key="m.value"
+      :label="m.label"
+      :entries="daily.byMeal[m.value].entries"
+      :totals="daily.byMeal[m.value].totals"
+      :target="targetOf(m.value)"
+      :food-by-id="foods.byId"
+      @remove="onRemove"
+      @add="openPicker(m.value)" />
+
+    <div v-if="daily.byMeal.unset.entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">未分类</div>
+      <EntryRow v-for="e in daily.byMeal.unset.entries" :key="e.id"
         :entry="e" :food="e.kind === 'food' ? foods.byId(e.foodId) : undefined"
         @remove="onRemove" />
     </div>
 
-    <button class="fixed bottom-20 right-5 w-14 h-14 rounded-full bg-emerald-500 text-white text-3xl shadow-lg"
-      @click="showPicker = true">+</button>
+    <button class="fixed bottom-20 right-5 w-14 h-14 rounded-full bg-emerald-500 text-white text-3xl shadow-lg active:scale-95 transition"
+      @click="openPicker('breakfast')">+</button>
 
-    <FoodPicker :open="showPicker" @close="showPicker = false"
+    <FoodPicker :open="showPicker" :default-meal="pickerMeal" @close="showPicker = false"
       @pick-food="onPickFood" @pick-recipe="onPickRecipe" @pick-adhoc="onPickAdhoc" />
   </div>
 </template>

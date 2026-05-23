@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import * as logsDb from '@/db/logs';
 import * as foodsDb from '@/db/foods';
 import type { DailyLogRow, Entry, FoodRow } from '@/db/db';
-import type { DayType } from '@/constants/goals';
+import type { DayType, MealType } from '@/constants/goals';
 import { addDays } from '@/lib/date';
 import { entryTotals, kcalOf, multipliers, sumTotals, type Nutrients } from '@/lib/calc';
 import { WEIGHT_KG } from '@/constants/goals';
@@ -37,9 +37,28 @@ export const useDailyStore = defineStore('daily', () => {
   const kcal = computed(() => kcalOf(totals.value));
   const muls = computed(() => multipliers(totals.value, WEIGHT_KG));
 
-  async function addFoodEntry(foodId: string, amount: number) {
+  // 按餐次分组的明细 + 汇总
+  const byMeal = computed(() => {
+    const groups: Record<MealType | 'unset', { entries: Entry[]; totals: Nutrients }> = {
+      breakfast: { entries: [], totals: { carb: 0, protein: 0, fat: 0 } },
+      lunch:     { entries: [], totals: { carb: 0, protein: 0, fat: 0 } },
+      dinner:    { entries: [], totals: { carb: 0, protein: 0, fat: 0 } },
+      snack:     { entries: [], totals: { carb: 0, protein: 0, fat: 0 } },
+      unset:     { entries: [], totals: { carb: 0, protein: 0, fat: 0 } }
+    };
+    for (const e of log.value?.entries ?? []) {
+      const key = e.mealType ?? 'unset';
+      groups[key].entries.push(e);
+    }
+    for (const k of Object.keys(groups) as (MealType | 'unset')[]) {
+      groups[k].totals = sumTotals(groups[k].entries.map(nutrientsFor));
+    }
+    return groups;
+  });
+
+  async function addFoodEntry(foodId: string, amount: number, mealType?: MealType) {
     if (!log.value) return;
-    await logsDb.addEntry(log.value.date, { kind: 'food', foodId, amount });
+    await logsDb.addEntry(log.value.date, { kind: 'food', foodId, amount, mealType });
     log.value = await logsDb.getLog(log.value.date) ?? null;
   }
   async function addAdhocEntry(input: Omit<Extract<Entry, { kind: 'adhoc' }>, 'id' | 'kind'>) {
@@ -58,5 +77,5 @@ export const useDailyStore = defineStore('daily', () => {
     log.value = await logsDb.getLog(log.value.date) ?? null;
   }
 
-  return { log, totals, kcal, muls, loadDay, addFoodEntry, addAdhocEntry, removeEntry, changeDayType };
+  return { log, totals, kcal, muls, byMeal, loadDay, addFoodEntry, addAdhocEntry, removeEntry, changeDayType };
 });

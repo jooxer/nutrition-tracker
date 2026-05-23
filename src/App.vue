@@ -7,7 +7,7 @@ onMounted(async () => { await runSeedIfEmpty(); });
 </script>
 
 <template>
-  <div class="min-h-screen pb-16 text-slate-900">
+  <div class="min-h-screen pb-[68px] text-slate-900">
     <RouterView />
     <Toast />
     <BottomTabBar />

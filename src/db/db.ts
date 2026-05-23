@@ -1,6 +1,6 @@
 import { openDB, type IDBPDatabase, type DBSchema } from 'idb';
 import type { Category } from '@/constants/categories';
-import type { DayType } from '@/constants/goals';
+import type { DayType, MealType } from '@/constants/goals';
 
 export interface FoodRow {
   id: string;
@@ -26,12 +26,13 @@ export interface RecipeRow {
 }
 
 export type Entry =
-  | { id: string; kind: 'food'; foodId: string; amount: number }
+  | { id: string; kind: 'food'; foodId: string; amount: number; mealType?: MealType }
   | {
       id: string; kind: 'adhoc';
       name: string; spec: string;
       carb: number; protein: number; fat: number;
       amount: number;
+      mealType?: MealType;
     };
 
 export interface DailyLogRow {

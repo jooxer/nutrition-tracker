@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 import type { FoodRow, RecipeRow } from '@/db/db';
 import { CATEGORIES } from '@/constants/categories';
+import { MEALS, type MealType } from '@/constants/goals';
 
-defineProps<{ open: boolean }>();
+const props = defineProps<{ open: boolean; defaultMeal?: MealType }>();
 const emit = defineEmits<{
   close: [];
-  pickFood: [foodId: string, amount: number];
-  pickRecipe: [recipe: RecipeRow];
-  pickAdhoc: [data: { name: string; spec: string; carb: number; protein: number; fat: number; amount: number }];
+  pickFood: [foodId: string, amount: number, mealType: MealType];
+  pickRecipe: [recipe: RecipeRow, mealType: MealType];
+  pickAdhoc: [data: { name: string; spec: string; carb: number; protein: number; fat: number; amount: number; mealType: MealType }];
 }>();
 
 const foods = useFoodStore();
 const recipes = useRecipeStore();
 const tab = ref<'food' | 'recipe' | 'adhoc'>('food');
 const query = ref('');
+const meal = ref<MealType>(props.defaultMeal ?? 'breakfast');
+
+watch(() => props.open, (open) => {
+  if (open) meal.value = props.defaultMeal ?? meal.value;
+});
 
 const liveFoods = computed(() => foods.foods.filter(f => !f.deleted));
 const grouped = computed(() => {
@@ -33,15 +39,15 @@ const amount = ref(1);
 function pick(f: FoodRow) { picked.value = f; amount.value = 1; }
 function confirm() {
   if (!picked.value) return;
-  emit('pickFood', picked.value.id, amount.value);
+  emit('pickFood', picked.value.id, amount.value, meal.value);
   picked.value = null; query.value = ''; emit('close');
 }
-function confirmRecipe(r: RecipeRow) { emit('pickRecipe', r); emit('close'); }
+function confirmRecipe(r: RecipeRow) { emit('pickRecipe', r, meal.value); emit('close'); }
 
 const adhoc = reactive({ name: '', spec: '一份', carb: 0, protein: 0, fat: 0, amount: 1 });
 function confirmAdhoc() {
   if (!adhoc.name.trim()) return;
-  emit('pickAdhoc', { ...adhoc, name: adhoc.name.trim(), spec: adhoc.spec || '一份' });
+  emit('pickAdhoc', { ...adhoc, name: adhoc.name.trim(), spec: adhoc.spec || '一份', mealType: meal.value });
   Object.assign(adhoc, { name: '', spec: '一份', carb: 0, protein: 0, fat: 0, amount: 1 });
   emit('close');
 }
@@ -50,6 +56,14 @@ function confirmAdhoc() {
 <template>
   <div v-if="open" class="fixed inset-0 z-40 bg-black/40 flex items-end" @click.self="$emit('close')">
     <div class="w-full bg-white rounded-t-2xl max-h-[85vh] flex flex-col">
+      <div class="px-3 pt-3 pb-2 flex flex-wrap gap-1.5 border-b border-slate-100">
+        <button v-for="m in MEALS" :key="m.value"
+          @click="meal = m.value"
+          :class="['px-3 py-1 rounded-full text-xs',
+            meal === m.value ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500']">
+          {{ m.label }}
+        </button>
+      </div>
       <div class="flex border-b border-slate-100">
         <button v-for="t in (['food','recipe','adhoc'] as const)" :key="t" @click="tab = t"
           :class="['py-3 flex-1 text-sm', tab === t ? 'text-emerald-600 font-semibold border-b-2 border-emerald-500' : 'text-slate-500']">
