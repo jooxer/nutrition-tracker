@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { useCategoriesStore } from '@/stores/categoriesStore';
+import { useFoodOrderStore } from '@/stores/foodOrderStore';
 import type { FoodRow, RecipeRow } from '@/db/db';
 import { MEALS, type MealType } from '@/constants/goals';
 
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 const foods = useFoodStore();
 const recipes = useRecipeStore();
 const cats = useCategoriesStore();
+const order = useFoodOrderStore();
 const tab = ref<'food' | 'recipe' | 'adhoc'>('food');
 const query = ref('');
 const meal = ref<MealType>(props.defaultMeal ?? 'breakfast');
@@ -47,7 +49,9 @@ const grouped = computed(() => {
     if (!map.has(f.category)) map.set(f.category, []);
     map.get(f.category)!.push(f);
   }
-  return [...map.entries()].filter(([, v]) => v.length > 0);
+  return [...map.entries()]
+    .filter(([, v]) => v.length > 0)
+    .map(([cat, list]) => [cat, order.sort(cat, list)] as const);
 });
 const searching = computed(() => query.value.trim().length > 0);
 
