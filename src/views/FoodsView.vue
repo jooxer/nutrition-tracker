@@ -61,6 +61,23 @@ function resetCat(cat: string) {
   order.reset(cat);
   toast.show('已恢复');
 }
+
+function catIndex(cat: string) {
+  return cats.all.indexOf(cat);
+}
+function moveCat(cat: string, dir: 'up' | 'down' | 'top') {
+  const list = cats.all;
+  const i = list.indexOf(cat);
+  if (i < 0) return;
+  if (dir === 'up' && i > 0) cats.move(i, i - 1);
+  else if (dir === 'down' && i < list.length - 1) cats.move(i, i + 1);
+  else if (dir === 'top' && i > 0) cats.move(i, 0);
+}
+function resetAllCatOrder() {
+  if (!confirm('恢复分类默认顺序？')) return;
+  cats.resetOrder();
+  toast.show('已恢复');
+}
 </script>
 
 <template>
@@ -73,14 +90,25 @@ function resetCat(cat: string) {
         {{ sorting ? '完成' : '排序' }}
       </button>
     </div>
-    <div v-if="sorting" class="text-xs text-slate-400 px-1">
-      排序模式 · 点击 ↑ ↓ 调整 · 顶按钮置顶 · 搜索时不可排序
+    <div v-if="sorting" class="flex items-center justify-between text-xs text-slate-400 px-1">
+      <span>排序模式 · 分类与食物均可调整 · 搜索时不可排序</span>
+      <button v-if="!query.trim()" class="text-emerald-600" @click="resetAllCatOrder">分类恢复默认</button>
     </div>
 
     <div v-for="[cat, list] in grouped" :key="cat" class="rounded-2xl bg-white shadow-sm overflow-hidden">
-      <div class="px-4 py-2 text-xs text-slate-500 bg-slate-50 flex items-center justify-between">
-        <span>{{ cat }}（{{ list.length }}）</span>
-        <button v-if="sorting && !query.trim()" class="text-emerald-600 text-[11px]" @click="resetCat(cat)">恢复默认</button>
+      <div class="px-4 py-2 text-xs text-slate-500 bg-slate-50 flex items-center gap-2">
+        <span class="flex-1 truncate">{{ cat }}（{{ list.length }}）</span>
+        <template v-if="sorting && !query.trim()">
+          <div class="flex gap-1">
+            <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 disabled:opacity-30"
+                    :disabled="catIndex(cat) === 0" @click="moveCat(cat, 'top')" aria-label="分类置顶">⤒</button>
+            <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 disabled:opacity-30"
+                    :disabled="catIndex(cat) === 0" @click="moveCat(cat, 'up')" aria-label="分类上移">↑</button>
+            <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 disabled:opacity-30"
+                    :disabled="catIndex(cat) === cats.all.length - 1" @click="moveCat(cat, 'down')" aria-label="分类下移">↓</button>
+          </div>
+          <button class="text-emerald-600 text-[11px] flex-shrink-0" @click="resetCat(cat)">食物默认</button>
+        </template>
       </div>
       <div v-for="(f, i) in list" :key="f.id" class="flex items-center px-4 py-2 border-b border-slate-50">
         <div class="flex-1 min-w-0">
