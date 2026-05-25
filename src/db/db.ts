@@ -48,20 +48,23 @@ export interface Schema extends DBSchema {
 }
 
 export const DB_NAME = 'nutrition-tracker';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 let _db: IDBPDatabase<Schema> | null = null;
 
 export async function getDB(): Promise<IDBPDatabase<Schema>> {
   if (_db) return _db;
   _db = await openDB<Schema>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      const foods = db.createObjectStore('foods', { keyPath: 'id' });
-      foods.createIndex('byCategory', 'category');
-      foods.createIndex('byName', 'name');
-      foods.createIndex('byDeleted', 'deleted');
-      db.createObjectStore('recipes', { keyPath: 'id' });
-      db.createObjectStore('daily_logs', { keyPath: 'date' });
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        const foods = db.createObjectStore('foods', { keyPath: 'id' });
+        foods.createIndex('byCategory', 'category');
+        foods.createIndex('byName', 'name');
+        foods.createIndex('byDeleted', 'deleted');
+        db.createObjectStore('recipes', { keyPath: 'id' });
+        db.createObjectStore('daily_logs', { keyPath: 'date' });
+      }
+      // v2: no-op (settings moved to localStorage)
     }
   });
   return _db;
