@@ -1,23 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { getLog } from '@/db/logs';
+import { getLog, setDayType } from '@/db/logs';
 import { useFoodStore } from '@/stores/foodStore';
 import { entryTotals, kcalOf, multipliers, sumTotals } from '@/lib/calc';
-import { WEIGHT_KG, MEALS, mealTargetsFor } from '@/constants/goals';
+import { WEIGHT_KG, MEALS, mealTargetsFor, type DayType } from '@/constants/goals';
 import { groupByMeal } from '@/lib/meals';
 import { friendlyDate } from '@/lib/date';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useToast } from '@/stores/toastStore';
 import type { DailyLogRow, Entry } from '@/db/db';
 import MetabolicDial from '@/components/MetabolicDial.vue';
 import MealGroup from '@/components/MealGroup.vue';
 import EntryRow from '@/components/EntryRow.vue';
+import SegmentedControl from '@/components/SegmentedControl.vue';
 
 const route = useRoute();
 const date = computed(() => String(route.params.date));
 const log = ref<DailyLogRow | null>(null);
 const foods = useFoodStore();
 const settings = useSettingsStore();
+const toast = useToast();
 
 onMounted(async () => {
   await Promise.all([foods.load()]);
@@ -34,7 +37,15 @@ function nutrientsFor(e: Entry) {
 const totals = computed(() => log.value ? sumTotals(log.value.entries.map(nutrientsFor)) : { carb: 0, protein: 0, fat: 0 });
 const kcal = computed(() => kcalOf(totals.value));
 const muls = computed(() => multipliers(totals.value, WEIGHT_KG));
-const dayType = computed(() => log.value?.dayType ?? 'rest');
+const dayType = computed<DayType>({
+  get: () => log.value?.dayType ?? 'rest',
+  set: async (v) => {
+    if (!log.value) return;
+    await setDayType(log.value.date, v);
+    log.value = { ...log.value, dayType: v };
+    toast.show(v === 'training' ? '已切换为力训日' : '已切换为休息日');
+  }
+});
 const targets = computed(() => settings.targetsFor(dayType.value));
 const targetMuls = computed(() => ({
   carb: targets.value.carb / WEIGHT_KG,
@@ -49,9 +60,12 @@ function targetOf(meal: typeof MEALS[number]['value']) {
 
 <template>
   <div class="p-4 space-y-3">
-    <div class="text-sm text-slate-500">
-      <span class="text-slate-700 font-medium">{{ friendlyDate(date) }}</span>
-      <span class="ml-2">{{ log?.dayType === 'training' ? '力训日' : '休息日' }}</span>
+    <div class="flex items-center justify-between">
+      <div class="text-sm text-slate-700 font-medium">{{ friendlyDate(date) }}</div>
+      <SegmentedControl v-if="log" v-model="dayType" :options="[
+        { value: 'training', label: '力训日' },
+        { value: 'rest',     label: '休息日' }
+      ]" />
     </div>
     <div v-if="!log" class="text-center text-slate-400 py-8">无记录</div>
     <template v-else>
