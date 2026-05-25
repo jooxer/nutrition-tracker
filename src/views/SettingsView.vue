@@ -3,12 +3,15 @@ import { computed, onMounted, ref } from 'vue';
 import { getDB, resetDBForTests, DB_VERSION } from '@/db/db';
 import { useFoodStore } from '@/stores/foodStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useCategoriesStore } from '@/stores/categoriesStore';
 import { useToast } from '@/stores/toastStore';
+import { getSetting, setSetting } from '@/db/settings';
 import { runSeedIfEmpty } from '@/lib/seed';
 import { MEALS, DEFAULT_MEAL_RATIOS, type DayType, type MealType, type MealRatios } from '@/constants/goals';
 
 const foods = useFoodStore();
 const settings = useSettingsStore();
+const cats = useCategoriesStore();
 const toast = useToast();
 const showDeleted = ref<boolean>(false);
 const draft = ref<MealRatios>(JSON.parse(JSON.stringify(DEFAULT_MEAL_RATIOS)));
@@ -43,11 +46,17 @@ async function resetRatios() {
 
 async function exportJson() {
   const db = await getDB();
-  const data = {
+  const data: Record<string, any> = {
     schemaVersion: DB_VERSION,
     foods: await db.getAll('foods'),
     recipes: await db.getAll('recipes'),
-    daily_logs: await db.getAll('daily_logs')
+    daily_logs: await db.getAll('daily_logs'),
+    preferences: {
+      foodOrder: getSetting<any>('nutrition-tracker:foodOrder'),
+      categoryOrder: getSetting<any>('nutrition-tracker:categoryOrder'),
+      customCategories: getSetting<any>('nutrition-tracker:customCategories'),
+      mealRatios: getSetting<any>('nutrition-tracker:mealRatios')
+    }
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -77,8 +86,16 @@ async function importJson(ev: Event) {
   for (const r of data.recipes)     await tx.objectStore('recipes').put(r);
   for (const l of data.daily_logs)  await tx.objectStore('daily_logs').put(l);
   await tx.done;
+  if (data.preferences) {
+    const p = data.preferences;
+    if (p.foodOrder) setSetting('nutrition-tracker:foodOrder', p.foodOrder);
+    if (p.categoryOrder) setSetting('nutrition-tracker:categoryOrder', p.categoryOrder);
+    if (p.customCategories) setSetting('nutrition-tracker:customCategories', p.customCategories);
+    if (p.mealRatios) setSetting('nutrition-tracker:mealRatios', p.mealRatios);
+  }
   await foods.load();
   settings.reload();
+  cats.reload();
   draft.value = JSON.parse(JSON.stringify(settings.ratios));
   toast.show('已导入');
 }
