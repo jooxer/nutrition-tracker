@@ -65,7 +65,7 @@ async function importJson(ev: Event) {
   const text = await file.text();
   let data: any;
   try { data = JSON.parse(text); } catch { toast.show('JSON 解析失败', 'error'); return; }
-  if (data.schemaVersion !== DB_VERSION) { toast.show(`版本不符（${data.schemaVersion} vs ${DB_VERSION}）`, 'error'); return; }
+  if (![1, 2].includes(data.schemaVersion)) { toast.show(`版本不支持（${data.schemaVersion}）`, 'error'); return; }
   if (!Array.isArray(data.foods) || !Array.isArray(data.recipes) || !Array.isArray(data.daily_logs)) {
     toast.show('文件格式不正确', 'error'); return;
   }
