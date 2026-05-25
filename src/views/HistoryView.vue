@@ -32,11 +32,13 @@ function nutrientsFor(e: Entry) {
 const statusByDate = computed<Record<string, 'green' | 'red' | 'gray' | 'none'>>(() => {
   const out: Record<string, 'green' | 'red' | 'gray' | 'none'> = {};
   for (const log of logs.value) {
+    if (!log.entries.length) continue;
     const totals = sumTotals(log.entries.map(nutrientsFor));
     const kc = kcalOf(totals);
     const target = targetsFor(log.dayType).kcal;
-    const ratio = kc / target;
-    out[log.date] = ratio < 0.9 ? 'gray' : ratio > 1.1 ? 'red' : 'green';
+    if (kc > target) out[log.date] = 'red';
+    else if (kc < target * 0.95) out[log.date] = 'gray';
+    else out[log.date] = 'green';
   }
   return out;
 });
