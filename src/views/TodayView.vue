@@ -6,10 +6,11 @@ import { useRecipeStore } from '@/stores/recipeStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useToast } from '@/stores/toastStore';
 import { todayKey, friendlyDate } from '@/lib/date';
-import { WEIGHT_KG, targetsFor, MEALS, type MealType } from '@/constants/goals';
+import { WEIGHT_KG, targetsFor, mealTargetsFor, MEALS, type MealType } from '@/constants/goals';
 import { addEntry } from '@/db/logs';
 import type { RecipeRow, Entry } from '@/db/db';
 import MetabolicDial from '@/components/MetabolicDial.vue';
+import MealGroup from '@/components/MealGroup.vue';
 import EntryRow from '@/components/EntryRow.vue';
 import EntryEditor from '@/components/EntryEditor.vue';
 import SegmentedControl from '@/components/SegmentedControl.vue';
@@ -53,6 +54,10 @@ const dayType = computed({
   get: () => daily.log?.dayType ?? 'rest',
   set: async (v) => { await daily.changeDayType(v); }
 });
+
+function targetOf(meal: MealType) {
+  return mealTargetsFor(daily.log?.dayType ?? 'rest', meal, settings.ratios);
+}
 
 function openPicker(meal: MealType) {
   pickerMeal.value = meal;
@@ -192,17 +197,51 @@ async function confirmSaveRecipe() {
 
     <MetabolicDial v-if="!selecting" :totals="daily.totals" :targets="targets" :kcal="daily.kcal" :muls="daily.muls" :target-muls="targetMuls" />
 
-    <div v-for="m in MEALS" :key="m.value">
-      <div v-if="daily.byMeal[m.value].entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden mb-3">
-        <div class="px-4 py-2 text-xs text-slate-500 bg-slate-50 flex items-center justify-between">
-          <span>{{ m.label }}</span>
-          <button v-if="!selecting" class="text-emerald-600 text-lg" @click="openPicker(m.value)">+</button>
-        </div>
-        <div v-for="e in daily.byMeal[m.value].entries" :key="e.id"
-          :class="['flex items-center px-4 py-3 border-b border-slate-50 select-none', selecting ? 'cursor-pointer active:bg-slate-50' : '']"
+    <!-- 非选中模式：使用 MealGroup -->
+    <template v-if="!selecting">
+      <MealGroup v-for="m in MEALS" :key="m.value"
+        :label="m.label"
+        :entries="daily.byMeal[m.value].entries"
+        :totals="daily.byMeal[m.value].totals"
+        :target="targetOf(m.value)"
+        :food-by-id="foods.byId"
+        @edit="onEdit"
+        @add="openPicker(m.value)" />
+
+      <div v-if="daily.byMeal.unset.entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden">
+        <div class="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">未分类</div>
+        <EntryRow v-for="e in daily.byMeal.unset.entries" :key="e.id"
+          :entry="e" :food="e.kind === 'food' ? foods.byId(e.foodId) : undefined"
+          @edit="onEdit" />
+      </div>
+    </template>
+
+    <!-- 选中模式：自定义布局 -->
+    <template v-else>
+      <div v-for="m in MEALS" :key="m.value">
+        <div v-if="daily.byMeal[m.value].entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden mb-3">
+          <div class="px-4 py-2 text-xs text-slate-500 bg-slate-50">{{ m.label }}</div>
+          <div v-for="e in daily.byMeal[m.value].entries" :key="e.id"
+            :class="['flex items-center px-4 py-3 border-b border-slate-50 select-none cursor-pointer active:bg-slate-50']"
+            @pointerdown="onPointerDown(e.id)" @pointerup="onPointerUp" @pointercancel="onPointerUp"
+            @click="toggleSelect(e.id)">
+            <span :class="['w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mr-3',
+              selectedIds.has(e.id) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300']">
+            <svg v-if="selectedIds.has(e.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+            </span>
+            <EntryRow readonly :entry="e" :food="e.kind === 'food' ? foods.byId(e.foodId) : undefined"
+              class="flex-1 !px-0 !border-0" />
+          </div>
+      </div>
+    </div>
+
+      <div v-if="daily.byMeal.unset.entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden">
+        <div class="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">未分类</div>
+        <div v-for="e in daily.byMeal.unset.entries" :key="e.id"
+          :class="['flex items-center px-4 py-3 border-b border-slate-50 select-none cursor-pointer active:bg-slate-50']"
           @pointerdown="onPointerDown(e.id)" @pointerup="onPointerUp" @pointercancel="onPointerUp"
-          @click="selecting ? toggleSelect(e.id) : onEdit(e)">
-          <span v-if="selecting" :class="['w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mr-3',
+          @click="toggleSelect(e.id)">
+          <span :class="['w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mr-3',
             selectedIds.has(e.id) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300']">
             <svg v-if="selectedIds.has(e.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
           </span>
@@ -210,22 +249,7 @@ async function confirmSaveRecipe() {
             class="flex-1 !px-0 !border-0" />
         </div>
       </div>
-    </div>
-
-    <div v-if="daily.byMeal.unset.entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden">
-      <div class="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">未分类</div>
-      <div v-for="e in daily.byMeal.unset.entries" :key="e.id"
-        :class="['flex items-center px-4 py-3 border-b border-slate-50 select-none', selecting ? 'cursor-pointer active:bg-slate-50' : '']"
-        @pointerdown="onPointerDown(e.id)" @pointerup="onPointerUp" @pointercancel="onPointerUp"
-        @click="selecting ? toggleSelect(e.id) : onEdit(e)">
-        <span v-if="selecting" :class="['w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mr-3',
-          selectedIds.has(e.id) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300']">
-          <svg v-if="selectedIds.has(e.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
-        </span>
-        <EntryRow :entry="e" :food="e.kind === 'food' ? foods.byId(e.foodId) : undefined"
-          @edit="onEdit" class="flex-1 !px-0 !border-0" />
-      </div>
-    </div>
+    </template>
 
     <button v-if="!selecting" class="fixed bottom-20 right-5 w-14 h-14 rounded-full bg-emerald-500 text-white text-3xl shadow-lg active:scale-95 transition"
       @click="openPicker('breakfast')">+</button>
