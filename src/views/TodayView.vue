@@ -149,6 +149,22 @@ async function deleteSelected() {
 }
 
 // 复制到其他日期
+const copyDates = computed(() => {
+  const dates: { label: string; value: string }[] = [];
+  const today = new Date();
+  for (let i = -3; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const val = d.toISOString().split('T')[0];
+    let label = `${d.getMonth() + 1}/${d.getDate()}`;
+    if (i === 0) label = '今天';
+    else if (i === -1) label = '昨天';
+    else if (i === 1) label = '明天';
+    else if (i === 2) label = '后天';
+    dates.push({ label, value: val });
+  }
+  return dates;
+});
 function openCopyDialog() {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -191,13 +207,11 @@ async function confirmSaveRecipe() {
       <div class="text-sm">
         <span class="text-slate-700 font-medium">{{ daily.log ? friendlyDate(daily.log.date) : '' }}</span>
       </div>
-      <div class="flex items-center gap-2">
-        <button v-if="selecting" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600" @click="cancelSelect">取消</button>
-        <SegmentedControl v-if="!selecting" v-model="dayType" :options="[
-          { value: 'training', label: '力训日' },
-          { value: 'rest',     label: '休息日' }
-        ]" />
-      </div>
+      <SegmentedControl v-if="!selecting" v-model="dayType" :options="[
+        { value: 'training', label: '力训日' },
+        { value: 'rest',     label: '休息日' }
+      ]" />
+      <span v-else class="text-xs text-slate-400">长按选择 · 点击切换</span>
     </div>
 
     <MetabolicDial v-if="!selecting" :totals="daily.totals" :targets="targets" :kcal="daily.kcal" :muls="daily.muls" :target-muls="targetMuls" />
@@ -261,12 +275,13 @@ async function confirmSaveRecipe() {
       @click="openPicker('breakfast')">+</button>
 
     <!-- 底部操作栏 -->
-    <div v-if="selecting && selectedIds.size > 0"
+    <div v-if="selecting"
       class="fixed bottom-[68px] left-0 right-0 bg-white border-t border-slate-200 p-3 flex items-center gap-2 z-40 shadow-lg">
-      <span class="text-sm text-slate-600 flex-1">已选 {{ selectedIds.size }} 项</span>
-      <button class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-sm" @click="openCopyDialog">复制到...</button>
-      <button class="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-sm" @click="openSaveRecipe">保存食谱</button>
-      <button class="px-3 py-1.5 rounded-lg bg-red-500 text-white text-sm" @click="deleteSelected">删除</button>
+      <button class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-sm" @click="cancelSelect">取消</button>
+      <span class="text-sm text-slate-500 flex-1 text-center">{{ selectedIds.size }} 项</span>
+      <button :disabled="!selectedIds.size" :class="['px-3 py-1.5 rounded-lg text-sm', selectedIds.size ? 'bg-slate-100 text-slate-700' : 'bg-slate-50 text-slate-300']" @click="openCopyDialog">复制</button>
+      <button :disabled="!selectedIds.size" :class="['px-3 py-1.5 rounded-lg text-sm', selectedIds.size ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-300']" @click="openSaveRecipe">食谱</button>
+      <button :disabled="!selectedIds.size" :class="['px-3 py-1.5 rounded-lg text-sm', selectedIds.size ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-300']" @click="deleteSelected">删除</button>
     </div>
 
     <FoodPicker :open="showPicker" :default-meal="pickerMeal" @close="showPicker = false"
@@ -275,21 +290,36 @@ async function confirmSaveRecipe() {
     <EntryEditor :entry="editing" :food="editingFood"
       @close="editing = null" @save="onSaveEdit" @remove="onRemoveEdit" />
 
-    <!-- 复制到日期弹窗 -->
-    <div v-if="showCopyDialog" class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" @click.self="showCopyDialog = false">
-      <div class="bg-white rounded-2xl p-4 w-full max-w-sm space-y-3">
-        <div class="text-base font-semibold">复制到日期</div>
-        <input v-model="copyDate" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" />
-        <div class="flex flex-wrap gap-1.5">
-          <button v-for="m in MEALS" :key="m.value" @click="copyMeal = m.value"
-            :class="['px-3 py-1 rounded-full text-xs', copyMeal === m.value ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500']">
-            {{ m.label }}
-          </button>
+    <!-- 复制到日期 - 底部 sheet -->
+    <div v-if="showCopyDialog" class="fixed inset-0 z-50 bg-black/40 flex items-end" @click.self="showCopyDialog = false">
+      <div class="w-full bg-white rounded-t-2xl p-4 space-y-4 animate-slide-up">
+        <div class="flex items-center justify-between">
+          <span class="text-base font-semibold">复制到</span>
+          <button class="text-sm text-slate-400" @click="showCopyDialog = false">取消</button>
         </div>
-        <div class="flex gap-2">
-          <button class="flex-1 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm" @click="showCopyDialog = false">取消</button>
-          <button class="flex-1 px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm" @click="confirmCopy">确定</button>
+        <div>
+          <div class="text-xs text-slate-400 mb-2">选择日期</div>
+          <div class="flex flex-wrap gap-2">
+            <button v-for="d in copyDates" :key="d.value" @click="copyDate = d.value"
+              :class="['px-3 py-1.5 rounded-full text-xs transition',
+                copyDate === d.value ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600']">
+              {{ d.label }}
+            </button>
+          </div>
         </div>
+        <div>
+          <div class="text-xs text-slate-400 mb-2">选择餐次</div>
+          <div class="flex gap-2">
+            <button v-for="m in MEALS" :key="m.value" @click="copyMeal = m.value"
+              :class="['px-4 py-2 rounded-full text-sm flex-1 transition',
+                copyMeal === m.value ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600']">
+              {{ m.label }}
+            </button>
+          </div>
+        </div>
+        <button class="w-full py-3 rounded-full bg-emerald-500 text-white text-sm font-medium" @click="confirmCopy">
+          确认复制
+        </button>
       </div>
     </div>
 
