@@ -131,7 +131,7 @@ async function deleteSelected() {
 
     <!-- 底部操作栏 -->
     <div v-if="selecting && selectedIds.size > 0"
-      class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 flex items-center gap-3 z-30">
+      class="fixed bottom-[68px] left-0 right-0 bg-white border-t border-slate-200 p-4 flex items-center gap-3 z-40 shadow-lg">
       <span class="text-sm text-slate-600 flex-1">已选 {{ selectedIds.size }} 项</span>
       <button class="px-4 py-2 rounded-full bg-red-500 text-white text-sm" @click="deleteSelected">删除</button>
     </div>

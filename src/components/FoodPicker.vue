@@ -41,6 +41,8 @@ const recentSorted = computed(() => {
     return f && !f.deleted;
   });
 });
+const quickPicking = ref<string | null>(null);
+const quickAmount = ref(1);
 
 watch(() => props.open, async (open) => {
   if (open) {
@@ -139,7 +141,13 @@ function confirmAdhoc() {
 }
 
 function quickAdd(foodId: string) {
-  emit('pickFood', foodId, 1, meal.value);
+  quickPicking.value = foodId;
+  quickAmount.value = 1;
+}
+function confirmQuickAdd() {
+  if (!quickPicking.value) return;
+  emit('pickFood', quickPicking.value, quickAmount.value, meal.value);
+  quickPicking.value = null;
 }
 </script>
 
@@ -177,16 +185,30 @@ function quickAdd(foodId: string) {
             <div class="flex-1 min-w-0">
               <div class="text-sm truncate">{{ foods.byId(r.foodId)?.name }}</div>
               <div class="text-xs text-slate-400 truncate">
-                {{ foods.byId(r.foodId)?.spec }} · {{ r.count }}次 · {{ r.lastUsed }}
+                {{ foods.byId(r.foodId)?.spec }} · {{ r.count }}次
               </div>
             </div>
             <button class="w-8 h-8 rounded-full bg-emerald-500 text-white text-lg flex items-center justify-center flex-shrink-0 active:bg-emerald-600"
               @click="quickAdd(r.foodId)">+</button>
           </div>
         </div>
+        <!-- 分量确认弹窗 -->
+        <div v-if="quickPicking" class="absolute inset-0 bg-black/30 flex items-center justify-center z-10 rounded-t-2xl">
+          <div class="bg-white rounded-2xl p-4 w-64 space-y-3 shadow-xl">
+            <div class="text-sm font-medium truncate">{{ foods.byId(quickPicking)?.name }}</div>
+            <div class="text-xs text-slate-400">{{ foods.byId(quickPicking)?.spec }}</div>
+            <label class="block text-xs text-slate-500">分量倍数</label>
+            <input v-model.number="quickAmount" type="number" step="0.1" min="0"
+              class="w-full px-3 py-2 rounded-lg bg-slate-100 text-base text-center" />
+            <div class="flex gap-2">
+              <button class="flex-1 py-2 rounded-full border border-slate-200 text-slate-600 text-sm" @click="quickPicking = null">取消</button>
+              <button class="flex-1 py-2 rounded-full bg-emerald-500 text-white text-sm" @click="confirmQuickAdd">添加</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div v-if="tab === 'food'" class="flex-1 overflow-y-auto flex flex-col">
+      <div v-else-if="tab === 'food'" class="flex-1 overflow-y-auto flex flex-col">
         <!-- 多选: 分量编辑步骤 -->
         <template v-if="multi && stage === 'amounts'">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">

@@ -101,15 +101,16 @@ const editingFood = computed(() => {
 });
 
 // 长按开始
-function onTouchStart(id: string) {
+function onPointerDown(id: string) {
   if (selecting.value) return;
   longPressTimer.value = window.setTimeout(() => {
     selecting.value = true;
     selectedIds.value = new Set([id]);
     longPressTimer.value = null;
-  }, 500);
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 400);
 }
-function onTouchEnd() {
+function onPointerUp() {
   if (longPressTimer.value) {
     clearTimeout(longPressTimer.value);
     longPressTimer.value = null;
@@ -198,15 +199,15 @@ async function confirmSaveRecipe() {
           <button v-if="!selecting" class="text-emerald-600 text-lg" @click="openPicker(m.value)">+</button>
         </div>
         <div v-for="e in daily.byMeal[m.value].entries" :key="e.id"
-          :class="['flex items-center px-4 py-3 border-b border-slate-50', selecting ? 'cursor-pointer' : '']"
-          @touchstart="onTouchStart(e.id)" @touchend="onTouchEnd" @touchcancel="onTouchEnd"
-          @click="selecting ? toggleSelect(e.id) : undefined">
+          :class="['flex items-center px-4 py-3 border-b border-slate-50 select-none', selecting ? 'cursor-pointer active:bg-slate-50' : '']"
+          @pointerdown="onPointerDown(e.id)" @pointerup="onPointerUp" @pointercancel="onPointerUp"
+          @click="selecting ? toggleSelect(e.id) : onEdit(e)">
           <span v-if="selecting" :class="['w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mr-3',
             selectedIds.has(e.id) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300']">
             <svg v-if="selectedIds.has(e.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
           </span>
-          <EntryRow :entry="e" :food="e.kind === 'food' ? foods.byId(e.foodId) : undefined"
-            @edit="onEdit" class="flex-1 !px-0 !border-0" />
+          <EntryRow readonly :entry="e" :food="e.kind === 'food' ? foods.byId(e.foodId) : undefined"
+            class="flex-1 !px-0 !border-0" />
         </div>
       </div>
     </div>
@@ -214,9 +215,9 @@ async function confirmSaveRecipe() {
     <div v-if="daily.byMeal.unset.entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden">
       <div class="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">未分类</div>
       <div v-for="e in daily.byMeal.unset.entries" :key="e.id"
-        :class="['flex items-center px-4 py-3 border-b border-slate-50', selecting ? 'cursor-pointer' : '']"
-        @touchstart="onTouchStart(e.id)" @touchend="onTouchEnd" @touchcancel="onTouchEnd"
-        @click="selecting ? toggleSelect(e.id) : undefined">
+        :class="['flex items-center px-4 py-3 border-b border-slate-50 select-none', selecting ? 'cursor-pointer active:bg-slate-50' : '']"
+        @pointerdown="onPointerDown(e.id)" @pointerup="onPointerUp" @pointercancel="onPointerUp"
+        @click="selecting ? toggleSelect(e.id) : onEdit(e)">
         <span v-if="selecting" :class="['w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mr-3',
           selectedIds.has(e.id) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300']">
           <svg v-if="selectedIds.has(e.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
@@ -231,7 +232,7 @@ async function confirmSaveRecipe() {
 
     <!-- 底部操作栏 -->
     <div v-if="selecting && selectedIds.size > 0"
-      class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 flex items-center gap-2 z-30">
+      class="fixed bottom-[68px] left-0 right-0 bg-white border-t border-slate-200 p-3 flex items-center gap-2 z-40 shadow-lg">
       <span class="text-sm text-slate-600 flex-1">已选 {{ selectedIds.size }} 项</span>
       <button class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-sm" @click="openCopyDialog">复制到...</button>
       <button class="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-sm" @click="openSaveRecipe">保存食谱</button>
