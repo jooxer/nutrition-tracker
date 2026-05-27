@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { Entry, FoodRow } from '@/db/db';
 import EntryRow from './EntryRow.vue';
 
@@ -11,7 +11,21 @@ const props = defineProps<{
   foodById: (id: string) => FoodRow | undefined;
   readonly?: boolean;
 }>();
-defineEmits<{ edit: [Entry]; add: [] }>();
+const emit = defineEmits<{ edit: [Entry]; add: []; longpress: [Entry] }>();
+
+const longTimer = ref<number | null>(null);
+
+function onDown(e: Entry) {
+  if (props.readonly) return;
+  longTimer.value = window.setTimeout(() => {
+    emit('longpress', e);
+    longTimer.value = null;
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 400);
+}
+function onUp() {
+  if (longTimer.value) { clearTimeout(longTimer.value); longTimer.value = null; }
+}
 
 function pctOf(cur: number, tgt: number) {
   return tgt > 0 ? Math.min(100, Math.round((cur / tgt) * 100)) : 0;
@@ -47,12 +61,7 @@ function statusOf(cur: number, tgt: number): 'empty' | 'partial' | 'done' | 'ove
           <span class="text-slate-500 w-12 flex-shrink-0">碳水</span>
           <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all duration-300"
-              :class="{
-                'bg-blue-500': carbStatus === 'partial',
-                'bg-emerald-500': carbStatus === 'done',
-                'bg-red-400': carbStatus === 'over',
-                'bg-transparent': carbStatus === 'empty'
-              }"
+              :class="{ 'bg-blue-500': carbStatus === 'partial', 'bg-emerald-500': carbStatus === 'done', 'bg-red-400': carbStatus === 'over', 'bg-transparent': carbStatus === 'empty' }"
               :style="{ width: pctOf(totals.carb, target.carb) + '%' }"></div>
           </div>
           <span class="text-slate-700 font-medium tabular-nums w-[88px] text-right">
@@ -64,12 +73,7 @@ function statusOf(cur: number, tgt: number): 'empty' | 'partial' | 'done' | 'ove
           <span class="text-slate-500 w-12 flex-shrink-0">蛋白质</span>
           <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all duration-300"
-              :class="{
-                'bg-emerald-400': proteinStatus === 'partial',
-                'bg-emerald-600': proteinStatus === 'done',
-                'bg-red-400': proteinStatus === 'over',
-                'bg-transparent': proteinStatus === 'empty'
-              }"
+              :class="{ 'bg-emerald-400': proteinStatus === 'partial', 'bg-emerald-600': proteinStatus === 'done', 'bg-red-400': proteinStatus === 'over', 'bg-transparent': proteinStatus === 'empty' }"
               :style="{ width: pctOf(totals.protein, target.protein) + '%' }"></div>
           </div>
           <span class="text-slate-700 font-medium tabular-nums w-[88px] text-right">
@@ -81,9 +85,11 @@ function statusOf(cur: number, tgt: number): 'empty' | 'partial' | 'done' | 'ove
     </div>
 
     <div v-if="!entries.length" class="px-4 py-5 text-center text-xs text-slate-300">未添加</div>
-    <EntryRow v-for="e in entries" :key="e.id"
-      :entry="e" :food="e.kind === 'food' ? foodById(e.foodId) : undefined"
-      :readonly="readonly"
-      @edit="(en) => $emit('edit', en)" />
+    <div v-for="e in entries" :key="e.id" class="select-none"
+      @pointerdown="onDown(e)" @pointerup="onUp" @pointercancel="onUp">
+      <EntryRow :entry="e" :food="e.kind === 'food' ? foodById(e.foodId) : undefined"
+        :readonly="readonly"
+        @edit="(en) => $emit('edit', en)" />
+    </div>
   </div>
 </template>

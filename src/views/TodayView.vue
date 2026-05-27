@@ -77,6 +77,11 @@ function onEdit(e: Entry) {
   if (selecting.value) return;
   editing.value = e;
 }
+
+function onLongPress(e: Entry) {
+  selecting.value = true;
+  selectedIds.value = new Set([e.id]);
+}
 async function onSaveEdit(id: string, patch: { amount: number; mealType: MealType }) {
   await daily.updateEntry(id, patch);
   editing.value = null;
@@ -206,7 +211,8 @@ async function confirmSaveRecipe() {
         :target="targetOf(m.value)"
         :food-by-id="foods.byId"
         @edit="onEdit"
-        @add="openPicker(m.value)" />
+        @add="openPicker(m.value)"
+        @longpress="onLongPress" />
 
       <div v-if="daily.byMeal.unset.entries.length" class="rounded-2xl bg-white shadow-sm overflow-hidden">
         <div class="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">未分类</div>
