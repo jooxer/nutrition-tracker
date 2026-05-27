@@ -4,6 +4,7 @@ import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { useCategoriesStore } from '@/stores/categoriesStore';
 import { useFoodOrderStore } from '@/stores/foodOrderStore';
+import { getRecentFoods, type RecentFood } from '@/lib/recentFoods';
 import type { FoodRow, RecipeRow } from '@/db/db';
 import { MEALS, type MealType } from '@/constants/goals';
 
@@ -20,7 +21,7 @@ const foods = useFoodStore();
 const recipes = useRecipeStore();
 const cats = useCategoriesStore();
 const order = useFoodOrderStore();
-const tab = ref<'food' | 'recipe' | 'adhoc'>('food');
+const tab = ref<'recent' | 'food' | 'recipe' | 'adhoc'>('recent');
 const query = ref('');
 const meal = ref<MealType>(props.defaultMeal ?? 'breakfast');
 const collapsed = ref<Set<string>>(new Set(cats.all));
@@ -28,7 +29,20 @@ const multi = ref(false);
 const selected = ref<Map<string, number>>(new Map());
 const stage = ref<'list' | 'amounts'>('list');
 
-watch(() => props.open, (open) => {
+// 最近添加
+const recentList = ref<RecentFood[]>([]);
+const recentSort = ref<'count' | 'latest'>('count');
+const recentSorted = computed(() => {
+  const list = [...recentList.value];
+  if (recentSort.value === 'count') list.sort((a, b) => b.count - a.count);
+  else list.sort((a, b) => b.lastUsed.localeCompare(a.lastUsed));
+  return list.filter(r => {
+    const f = foods.byId(r.foodId);
+    return f && !f.deleted;
+  });
+});
+
+watch(() => props.open, async (open) => {
   if (open) {
     meal.value = props.defaultMeal ?? meal.value;
     multi.value = false;
@@ -36,6 +50,8 @@ watch(() => props.open, (open) => {
     stage.value = 'list';
     picked.value = null;
     query.value = '';
+    tab.value = 'recent';
+    recentList.value = await getRecentFoods();
   }
 });
 
@@ -121,6 +137,10 @@ function confirmAdhoc() {
   Object.assign(adhoc, { name: '', spec: '一份', carb: 0, protein: 0, fat: 0, amount: 1 });
   emit('close');
 }
+
+function quickAdd(foodId: string) {
+  emit('pickFood', foodId, 1, meal.value);
+}
 </script>
 
 <template>
@@ -135,10 +155,35 @@ function confirmAdhoc() {
         </button>
       </div>
       <div class="flex border-b border-slate-100">
-        <button v-for="t in (['food','recipe','adhoc'] as const)" :key="t" @click="tab = t"
+        <button v-for="t in (['recent','food','recipe','adhoc'] as const)" :key="t" @click="tab = t"
           :class="['py-3 flex-1 text-sm', tab === t ? 'text-emerald-600 font-semibold border-b-2 border-emerald-500' : 'text-slate-500']">
-          {{ t === 'food' ? '食物' : t === 'recipe' ? '菜谱' : '临时项' }}
+          {{ t === 'recent' ? '最近' : t === 'food' ? '食物' : t === 'recipe' ? '菜谱' : '临时项' }}
         </button>
+      </div>
+
+      <!-- 最近添加 -->
+      <div v-if="tab === 'recent'" class="flex-1 overflow-y-auto flex flex-col">
+        <div class="px-3 py-2 flex items-center justify-between border-b border-slate-50">
+          <span class="text-xs text-slate-400">按{{ recentSort === 'count' ? '添加次数' : '最新添加' }}排序</span>
+          <button class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600"
+            @click="recentSort = recentSort === 'count' ? 'latest' : 'count'">
+            切换{{ recentSort === 'count' ? '最新' : '次数' }}
+          </button>
+        </div>
+        <div v-if="!recentSorted.length" class="flex-1 flex items-center justify-center text-sm text-slate-400">暂无记录</div>
+        <div v-else class="flex-1 overflow-y-auto">
+          <div v-for="r in recentSorted" :key="r.foodId"
+               class="flex items-center px-4 py-2.5 border-b border-slate-50 gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="text-sm truncate">{{ foods.byId(r.foodId)?.name }}</div>
+              <div class="text-xs text-slate-400 truncate">
+                {{ foods.byId(r.foodId)?.spec }} · {{ r.count }}次 · {{ r.lastUsed }}
+              </div>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-emerald-500 text-white text-lg flex items-center justify-center flex-shrink-0 active:bg-emerald-600"
+              @click="quickAdd(r.foodId)">+</button>
+          </div>
+        </div>
       </div>
 
       <div v-if="tab === 'food'" class="flex-1 overflow-y-auto flex flex-col">
