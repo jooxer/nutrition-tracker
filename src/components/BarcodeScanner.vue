@@ -105,7 +105,7 @@ function submitManual() {
 
 watch(() => props.open, async (o) => {
   if (o) {
-    mode.value = 'scan';
+    mode.value = 'capture';
     error.value = '';
     manualBarcode.value = '';
     await startCamera();
@@ -123,7 +123,7 @@ onBeforeUnmount(() => stopCamera());
       <button class="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 active:bg-white/20" @click="$emit('close')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <span class="text-sm">支持二维码、食品条码</span>
+      <span class="text-sm">{{ mode === 'capture' ? '对准营养成分表拍照' : '对准条码扫描' }}</span>
       <span class="w-9"></span>
     </div>
 
@@ -161,7 +161,7 @@ onBeforeUnmount(() => stopCamera());
     <div class="p-6 flex items-center justify-center gap-6 bg-black">
       <button :class="['px-4 py-2 rounded-full text-sm transition',
         mode === 'scan' ? 'bg-white text-black font-medium' : 'text-white/60']"
-        @click="switchMode('scan')">扫一扫</button>
+        @click="switchMode('scan')">扫条码</button>
       <button v-if="mode === 'capture'"
         class="w-16 h-16 rounded-full bg-white border-4 border-white/40 active:scale-95 transition"
         @click="capture"></button>

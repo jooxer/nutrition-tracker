@@ -15,6 +15,14 @@ const cats = useCategoriesStore();
 const toast = useToast();
 const showDeleted = ref<boolean>(false);
 const draft = ref<MealRatios>(JSON.parse(JSON.stringify(DEFAULT_MEAL_RATIOS)));
+const geminiKey = ref(localStorage.getItem('nutrition-tracker:geminiKey') || '');
+
+function saveGeminiKey() {
+  const k = geminiKey.value.trim();
+  if (k) localStorage.setItem('nutrition-tracker:geminiKey', k);
+  else localStorage.removeItem('nutrition-tracker:geminiKey');
+  toast.show('已保存');
+}
 
 onMounted(async () => {
   await foods.load();
@@ -151,6 +159,17 @@ const kindLabels = { carb: '碳水', protein: '蛋白质' } as const;
         <button class="px-4 py-2 rounded-full bg-emerald-500 text-white disabled:opacity-40"
           :disabled="!dirty || !allValid" @click="saveRatios">保存</button>
       </div>
+    </div>
+
+    <div class="rounded-2xl bg-white shadow-sm p-4 space-y-3">
+      <div class="font-semibold">拍照识别（Gemini AI）</div>
+      <div class="text-xs text-slate-400">配置 Gemini API Key 后，拍营养成分表可自动识别碳蛋脂数据。免费额度充足。</div>
+      <div class="flex gap-2">
+        <input v-model="geminiKey" type="password" placeholder="输入 Gemini API Key"
+          class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
+        <button class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm flex-shrink-0" @click="saveGeminiKey">保存</button>
+      </div>
+      <a href="https://aistudio.google.com/apikey" target="_blank" class="text-xs text-blue-500 underline">获取免费 API Key →</a>
     </div>
 
     <div class="rounded-2xl bg-white shadow-sm p-4 space-y-3">

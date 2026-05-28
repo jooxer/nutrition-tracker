@@ -6,7 +6,7 @@ import { useCategoriesStore } from '@/stores/categoriesStore';
 import { useFoodOrderStore } from '@/stores/foodOrderStore';
 import { getRecentFoods, type RecentFood } from '@/lib/recentFoods';
 import { lookupBarcode } from '@/lib/barcode';
-import { ocrImage, parseNutritionText } from '@/lib/nutritionOcr';
+import { recognizeNutritionLabel } from '@/lib/nutritionOcr';
 import type { FoodRow, RecipeRow } from '@/db/db';
 import { MEALS, type MealType } from '@/constants/goals';
 import BarcodeScanner from './BarcodeScanner.vue';
@@ -199,15 +199,14 @@ async function onCaptured(imageDataUrl: string) {
   scanLoading.value = true;
   scanError.value = '';
   try {
-    const text = await ocrImage(imageDataUrl);
-    const facts = parseNutritionText(text);
+    const facts = await recognizeNutritionLabel(imageDataUrl);
     if (!facts) {
       scanError.value = '未能识别营养成分，请手动输入';
       return;
     }
     tab.value = 'adhoc';
     Object.assign(adhoc, {
-      name: '',
+      name: facts.name || '',
       spec: facts.per || '100g',
       carb: facts.carb,
       protein: facts.protein,
@@ -234,8 +233,8 @@ async function onCaptured(imageDataUrl: string) {
         </button>
         <button class="ml-auto px-3 py-1 rounded-full text-xs bg-blue-50 text-blue-600 flex items-center gap-1"
           @click="showScanner = true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2"/><path d="M17 3h2a2 2 0 012 2v2"/><path d="M21 17v2a2 2 0 01-2 2h-2"/><path d="M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
-          扫码
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          拍照识别
         </button>
       </div>
       <div class="flex border-b border-slate-100">
