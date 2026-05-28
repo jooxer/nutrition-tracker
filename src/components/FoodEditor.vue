@@ -4,10 +4,16 @@ import type { FoodRow } from '@/db/db';
 import { type Category } from '@/constants/categories';
 import { useCategoriesStore } from '@/stores/categoriesStore';
 import { useToast } from '@/stores/toastStore';
+import { recognizeNutritionLabel } from '@/lib/nutritionOcr';
+import BarcodeScanner from './BarcodeScanner.vue';
 
 const NEW_TOKEN = '__new__';
 
-const props = defineProps<{ open: boolean; initial?: FoodRow | null }>();
+const props = defineProps<{
+  open: boolean;
+  initial?: FoodRow | null;
+  scanned?: { name: string; spec: string; carb: number; protein: number; fat: number } | null;
+}>();
 const emit = defineEmits<{
   close: [];
   save: [data: { name: string; category: Category; spec: string; carb: number; protein: number; fat: number; note: string | null; builtin: boolean }];
@@ -22,13 +28,41 @@ const form = reactive({
 });
 const adding = ref(false);
 const newCatName = ref('');
+const showScanner = ref(false);
+const scanLoading = ref(false);
 
-watch(() => props.initial, (v) => {
-  if (v) Object.assign(form, { name: v.name, category: v.category, spec: v.spec, carb: v.carb, protein: v.protein, fat: v.fat, note: v.note ?? '' });
-  else Object.assign(form, { name: '', category: '其他', spec: '100g', carb: 0, protein: 0, fat: 0, note: '' });
+watch(() => props.open, (o) => {
+  if (!o) return;
+  if (props.initial) {
+    Object.assign(form, { name: props.initial.name, category: props.initial.category, spec: props.initial.spec, carb: props.initial.carb, protein: props.initial.protein, fat: props.initial.fat, note: props.initial.note ?? '' });
+  } else if (props.scanned) {
+    Object.assign(form, { name: props.scanned.name, category: '其他', spec: props.scanned.spec, carb: props.scanned.carb, protein: props.scanned.protein, fat: props.scanned.fat, note: '' });
+  } else {
+    Object.assign(form, { name: '', category: '其他', spec: '100g', carb: 0, protein: 0, fat: 0, note: '' });
+  }
   adding.value = false;
   newCatName.value = '';
 }, { immediate: true });
+
+async function onCaptured(imageDataUrl: string) {
+  showScanner.value = false;
+  scanLoading.value = true;
+  try {
+    const facts = await recognizeNutritionLabel(imageDataUrl);
+    if (!facts) { toast.show('未能识别营养成分', 'error'); return; }
+    if (facts.name) form.name = facts.name;
+    if (facts.per) form.spec = facts.per;
+    form.carb = facts.carb;
+    form.protein = facts.protein;
+    form.fat = facts.fat;
+    toast.show('已识别，请检查数据');
+  } catch (e: any) {
+    console.error('OCR error:', e);
+    toast.show(e?.message || '识别失败', 'error');
+  } finally {
+    scanLoading.value = false;
+  }
+}
 
 function onCategoryChange(v: string) {
   if (v === NEW_TOKEN) {
@@ -71,7 +105,17 @@ function save() {
 <template>
   <div v-if="open" class="fixed inset-0 z-40 bg-black/40 flex items-center" @click.self="$emit('close')">
     <div class="m-4 w-full bg-white rounded-2xl p-4">
-      <div class="text-lg font-semibold mb-3">{{ initial ? '编辑食物' : '新增食物' }}</div>
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-lg font-semibold">{{ initial ? '编辑食物' : '新增食物' }}</div>
+        <button class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs flex items-center gap-1"
+          @click="showScanner = true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          拍照识别
+        </button>
+      </div>
       <div class="space-y-2 text-sm">
         <label class="block">名称<input v-model="form.name" class="mt-1 w-full px-3 py-2 rounded-lg bg-slate-100" /></label>
         <div class="block">
@@ -102,6 +146,15 @@ function save() {
       <div class="flex gap-2 mt-4">
         <button class="flex-1 py-2 rounded-full border border-slate-200 text-slate-600" @click="$emit('close')">取消</button>
         <button class="flex-1 py-2 rounded-full bg-emerald-500 text-white" @click="save">保存</button>
+      </div>
+    </div>
+
+    <BarcodeScanner :open="showScanner" @close="showScanner = false" @captured="onCaptured" />
+
+    <div v-if="scanLoading" class="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-6 flex flex-col items-center gap-3">
+        <div class="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-sm text-slate-600">识别中...</span>
       </div>
     </div>
   </div>

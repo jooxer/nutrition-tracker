@@ -4,8 +4,10 @@ import { useFoodStore } from '@/stores/foodStore';
 import { useCategoriesStore } from '@/stores/categoriesStore';
 import { useFoodOrderStore } from '@/stores/foodOrderStore';
 import { useToast } from '@/stores/toastStore';
+import { recognizeNutritionLabel } from '@/lib/nutritionOcr';
 import type { FoodRow } from '@/db/db';
 import FoodEditor from '@/components/FoodEditor.vue';
+import BarcodeScanner from '@/components/BarcodeScanner.vue';
 
 const foods = useFoodStore();
 const cats = useCategoriesStore();
@@ -15,6 +17,12 @@ const query = ref('');
 const editorOpen = ref(false);
 const editing = ref<FoodRow | null>(null);
 const sorting = ref(false);
+
+// 拍照识别
+const showScanner = ref(false);
+const scanLoading = ref(false);
+const scanError = ref('');
+const scannedData = ref<{ name: string; spec: string; carb: number; protein: number; fat: number } | null>(null);
 
 onMounted(() => foods.load());
 
@@ -29,8 +37,32 @@ const grouped = computed(() => {
     .filter(([, l]) => l.length > 0);
 });
 
-function openNew() { editing.value = null; editorOpen.value = true; }
-function openEdit(f: FoodRow) { editing.value = f; editorOpen.value = true; }
+function openNew() { editing.value = null; scannedData.value = null; editorOpen.value = true; }
+function openEdit(f: FoodRow) { editing.value = f; scannedData.value = null; editorOpen.value = true; }
+
+async function onCaptured(imageDataUrl: string) {
+  showScanner.value = false;
+  scanLoading.value = true;
+  scanError.value = '';
+  try {
+    const facts = await recognizeNutritionLabel(imageDataUrl);
+    if (!facts) { scanError.value = '未能识别营养成分'; return; }
+    scannedData.value = {
+      name: facts.name || '',
+      spec: facts.per || '100g',
+      carb: facts.carb,
+      protein: facts.protein,
+      fat: facts.fat
+    };
+    editing.value = null;
+    editorOpen.value = true;
+  } catch (e: any) {
+    console.error('OCR error:', e);
+    scanError.value = e?.message || '识别失败';
+  } finally {
+    scanLoading.value = false;
+  }
+}
 async function onSave(data: any) {
   if (editing.value) {
     await foods.update(editing.value.id, data); toast.show('已更新');
@@ -83,7 +115,17 @@ function resetAllCatOrder() {
 <template>
   <div class="p-4 space-y-3">
     <div class="flex gap-2">
-      <input v-model="query" placeholder="搜索食物..." class="flex-1 px-3 py-2 rounded-lg bg-white shadow-sm text-sm" />
+      <div class="relative flex-1">
+        <input v-model="query" placeholder="搜索食物..." class="w-full px-3 py-2 pr-10 rounded-lg bg-white shadow-sm text-sm" />
+        <button class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-slate-400 active:text-emerald-600"
+          @click="showScanner = true" aria-label="拍照识别">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 012-2h2"/><path d="M17 3h2a2 2 0 012 2v2"/>
+            <path d="M21 17v2a2 2 0 01-2 2h-2"/><path d="M7 21H5a2 2 0 01-2-2v-2"/>
+            <line x1="7" y1="12" x2="17" y2="12"/>
+          </svg>
+        </button>
+      </div>
       <button :class="['px-3 py-2 rounded-lg text-sm flex-shrink-0',
                        sorting ? 'bg-emerald-500 text-white' : 'bg-white shadow-sm text-slate-600']"
               @click="sorting = !sorting">
@@ -133,6 +175,22 @@ function resetAllCatOrder() {
     </div>
 
     <button v-if="!sorting" class="fixed bottom-20 right-5 w-14 h-14 rounded-full bg-emerald-500 text-white text-3xl shadow-lg" @click="openNew">+</button>
-    <FoodEditor :open="editorOpen" :initial="editing" @close="editorOpen = false" @save="onSave" />
+    <FoodEditor :open="editorOpen" :initial="editing" :scanned="scannedData" @close="editorOpen = false" @save="onSave" />
+
+    <BarcodeScanner :open="showScanner" @close="showScanner = false" @captured="onCaptured" />
+
+    <div v-if="scanLoading" class="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-6 flex flex-col items-center gap-3">
+        <div class="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-sm text-slate-600">识别中...</span>
+      </div>
+    </div>
+
+    <div v-if="scanError" class="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4" @click.self="scanError = ''">
+      <div class="bg-white rounded-2xl p-4 w-full max-w-xs space-y-3">
+        <div class="text-sm text-red-600 break-all">{{ scanError }}</div>
+        <button class="w-full py-2 rounded-full bg-slate-100 text-slate-700 text-sm" @click="scanError = ''">关闭</button>
+      </div>
+    </div>
   </div>
 </template>
