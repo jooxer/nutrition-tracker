@@ -177,8 +177,10 @@ async function onScanned(barcode: string) {
       return;
     }
     tab.value = 'adhoc';
+    const hint = (result.carb === 0 && result.protein === 0 && result.fat === 0)
+      ? '（仅识别到名称，请手动补充营养数据）' : '';
     Object.assign(adhoc, {
-      name: result.name,
+      name: result.name + hint,
       spec: result.spec || '100g',
       carb: result.carb,
       protein: result.protein,
