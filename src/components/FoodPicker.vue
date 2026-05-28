@@ -214,7 +214,12 @@ async function onCaptured(imageDataUrl: string) {
       amount: 1
     });
   } catch (e: any) {
-    scanError.value = e?.message || 'OCR 识别失败';
+    console.error('OCR error:', e);
+    let msg = e?.message || 'OCR 识别失败';
+    if (e?.message === 'Failed to fetch' || e?.name === 'TypeError') {
+      msg = '网络请求失败，请检查：1) API Key 是否正确 2) 网络连接 3) 是否需要代理访问';
+    }
+    scanError.value = msg;
   } finally {
     scanLoading.value = false;
   }
