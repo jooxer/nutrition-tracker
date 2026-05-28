@@ -36,13 +36,50 @@ async function testApiKey(provider: 'claude' | 'zhipu' | 'moonshot' | 'gemini') 
   if (!key) { testResult.value = '请先输入 API Key'; return; }
 
   try {
+    // 先测试基础网络连通性
+    const urlMap = {
+      claude: 'https://api.anthropic.com/v1/messages',
+      zhipu: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+      moonshot: 'https://api.moonshot.cn/v1/chat/completions',
+      gemini: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+    };
+
+    const testUrl = urlMap[provider];
+    console.log(`[Test] Testing ${provider} at ${testUrl}`);
+
     const testImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     const { recognizeNutritionLabel } = await import('@/lib/nutritionOcr');
     await recognizeNutritionLabel(testImg);
     testResult.value = `${provider} API 连接成功 ✓`;
   } catch (e: any) {
-    testResult.value = `${provider} 测试失败: ${e.message}`;
+    console.error(`[Test] ${provider} failed:`, e);
+    let msg = e.message || '未知错误';
+    if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
+      msg = '网络连接失败 — 可能原因：1) GitHub Pages 被墙导致无法访问国内/国外 API 2) 浏览器安全策略阻止 3) 需要代理';
+    }
+    testResult.value = `${provider} 测试失败: ${msg}`;
   }
+}
+
+async function diagNetwork() {
+  testResult.value = '诊断中...';
+  const results: string[] = [];
+  const endpoints = [
+    { name: '智谱', url: 'https://open.bigmodel.cn' },
+    { name: 'Moonshot', url: 'https://api.moonshot.cn' },
+    { name: 'Claude', url: 'https://api.anthropic.com' },
+    { name: 'Gemini', url: 'https://generativelanguage.googleapis.com' }
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      await fetch(ep.url, { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(5000) });
+      results.push(`${ep.name}: 可达 ✓`);
+    } catch (e: any) {
+      results.push(`${ep.name}: ${e.message}`);
+    }
+  }
+  testResult.value = results.join(' | ');
 }
 
 onMounted(async () => {
@@ -185,7 +222,8 @@ const kindLabels = { carb: '碳水', protein: '蛋白质' } as const;
     <div class="rounded-2xl bg-white shadow-sm p-4 space-y-3">
       <div class="font-semibold">拍照识别（AI 视觉）</div>
       <div class="text-xs text-slate-400">配置任一 API Key 后，拍营养成分表可自动识别碳蛋脂数据。优先级：Claude > 智谱 > Kimi > Gemini</div>
-      <div v-if="testResult" class="text-xs p-2 rounded-lg bg-slate-50 text-slate-600">{{ testResult }}</div>
+      <div v-if="testResult" class="text-xs p-2 rounded-lg bg-slate-50 text-slate-600 break-all">{{ testResult }}</div>
+      <button class="text-xs text-blue-500 underline" @click="diagNetwork">诊断网络连通性</button>
 
       <div class="space-y-2">
         <div class="text-xs font-semibold text-slate-600">Claude Opus 4（推荐，需代理）</div>

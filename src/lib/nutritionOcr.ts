@@ -97,11 +97,15 @@ async function zhipuExtract(imageDataUrl: string, apiKey: string): Promise<Nutri
     }]
   };
 
+  console.log('[Zhipu] Sending request to:', 'https://open.bigmodel.cn/api/paas/v4/chat/completions');
   const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30000)
+  }).catch(err => {
+    console.error('[Zhipu] Fetch error:', err);
+    throw err;
   });
 
   if (!res.ok) {
