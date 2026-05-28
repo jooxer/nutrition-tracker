@@ -10,7 +10,7 @@ export interface NutritionFacts {
   name?: string;
 }
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash';
 
 function getGeminiKey(): string {
   return localStorage.getItem('nutrition-tracker:geminiKey') || import.meta.env.VITE_GEMINI_API_KEY || '';
@@ -53,7 +53,15 @@ async function geminiExtract(imageDataUrl: string, apiKey: string): Promise<Nutr
     signal: AbortSignal.timeout(15000)
   });
 
-  if (!res.ok) throw new Error(`Gemini API 错误: ${res.status}`);
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    let msg = `Gemini API 错误 ${res.status}`;
+    if (res.status === 429) msg = 'API 配额已用完或请求过快，请稍后重试';
+    else if (res.status === 400) msg = 'API Key 无效或请求格式错误';
+    else if (res.status === 403) msg = 'API Key 权限不足，请检查是否启用了 Gemini API';
+    if (errText) console.error('Gemini error:', errText);
+    throw new Error(msg);
+  }
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
   const jsonMatch = text.match(/\{[\s\S]*\}/);
