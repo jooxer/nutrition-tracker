@@ -15,47 +15,44 @@ const cats = useCategoriesStore();
 const toast = useToast();
 const showDeleted = ref<boolean>(false);
 const draft = ref<MealRatios>(JSON.parse(JSON.stringify(DEFAULT_MEAL_RATIOS)));
-const claudeKey = ref(localStorage.getItem('nutrition-tracker:claudeKey') || '');
 const zhipuKey = ref(localStorage.getItem('nutrition-tracker:zhipuKey') || '');
 const moonshotKey = ref(localStorage.getItem('nutrition-tracker:moonshotKey') || '');
 const geminiKey = ref(localStorage.getItem('nutrition-tracker:geminiKey') || '');
 const testResult = ref('');
 
-function saveApiKey(provider: 'claude' | 'zhipu' | 'moonshot' | 'gemini') {
-  const keyMap = { claude: claudeKey, zhipu: zhipuKey, moonshot: moonshotKey, gemini: geminiKey };
+function saveApiKey(provider: 'zhipu' | 'moonshot' | 'gemini') {
+  const keyMap = { zhipu: zhipuKey, moonshot: moonshotKey, gemini: geminiKey };
   const k = keyMap[provider].value.trim();
   if (k) localStorage.setItem(`nutrition-tracker:${provider}Key`, k);
   else localStorage.removeItem(`nutrition-tracker:${provider}Key`);
   toast.show('已保存');
 }
 
-async function testApiKey(provider: 'claude' | 'zhipu' | 'moonshot' | 'gemini') {
+async function testApiKey(provider: 'zhipu' | 'moonshot' | 'gemini') {
   testResult.value = '测试中...';
-  const keyMap = { claude: claudeKey, zhipu: zhipuKey, moonshot: moonshotKey, gemini: geminiKey };
+  const keyMap = { zhipu: zhipuKey, moonshot: moonshotKey, gemini: geminiKey };
   const key = keyMap[provider].value.trim();
   if (!key) { testResult.value = '请先输入 API Key'; return; }
 
   try {
-    // 先测试基础网络连通性
-    const urlMap = {
-      claude: 'https://api.anthropic.com/v1/messages',
-      zhipu: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-      moonshot: 'https://api.moonshot.cn/v1/chat/completions',
-      gemini: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
-    };
-
-    const testUrl = urlMap[provider];
-    console.log(`[Test] Testing ${provider} at ${testUrl}`);
+    // 临时保存到 localStorage 供测试使用
+    const oldKey = localStorage.getItem(`nutrition-tracker:${provider}Key`);
+    localStorage.setItem(`nutrition-tracker:${provider}Key`, key);
 
     const testImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     const { recognizeNutritionLabel } = await import('@/lib/nutritionOcr');
     await recognizeNutritionLabel(testImg);
+
+    // 恢复旧值（测试成功后不自动保存）
+    if (oldKey) localStorage.setItem(`nutrition-tracker:${provider}Key`, oldKey);
+    else localStorage.removeItem(`nutrition-tracker:${provider}Key`);
+
     testResult.value = `${provider} API 连接成功 ✓`;
   } catch (e: any) {
     console.error(`[Test] ${provider} failed:`, e);
     let msg = e.message || '未知错误';
     if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
-      msg = '网络连接失败 — 可能原因：1) GitHub Pages 被墙导致无法访问国内/国外 API 2) 浏览器安全策略阻止 3) 需要代理';
+      msg = '网络连接失败';
     }
     testResult.value = `${provider} 测试失败: ${msg}`;
   }
@@ -67,7 +64,6 @@ async function diagNetwork() {
   const endpoints = [
     { name: '智谱', url: 'https://open.bigmodel.cn' },
     { name: 'Moonshot', url: 'https://api.moonshot.cn' },
-    { name: 'Claude', url: 'https://api.anthropic.com' },
     { name: 'Gemini', url: 'https://generativelanguage.googleapis.com' }
   ];
 
@@ -221,30 +217,20 @@ const kindLabels = { carb: '碳水', protein: '蛋白质' } as const;
 
     <div class="rounded-2xl bg-white shadow-sm p-4 space-y-3">
       <div class="font-semibold">拍照识别（AI 视觉）</div>
-      <div class="text-xs text-slate-400">配置任一 API Key 后，拍营养成分表可自动识别碳蛋脂数据。优先级：Claude > 智谱 > Kimi > Gemini</div>
+      <div class="text-xs text-slate-400">配置任一 API Key 后，拍营养成分表可自动识别碳蛋脂数据。优先级：智谱 > Kimi > Gemini</div>
       <div v-if="testResult" class="text-xs p-2 rounded-lg bg-slate-50 text-slate-600 break-all">{{ testResult }}</div>
       <button class="text-xs text-blue-500 underline" @click="diagNetwork">诊断网络连通性</button>
 
       <div class="space-y-2">
-        <div class="text-xs font-semibold text-slate-600">Claude Opus 4（推荐，需代理）</div>
-        <div class="flex gap-2">
-          <input v-model="claudeKey" type="password" placeholder="sk-ant-..."
-            class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
-          <button class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm flex-shrink-0" @click="saveApiKey('claude')">保存</button>
-          <button class="px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-xs flex-shrink-0" @click="testApiKey('claude')">测试</button>
-        </div>
-        <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-xs text-blue-500 underline">获取 Claude API Key →</a>
-      </div>
-
-      <div class="space-y-2">
-        <div class="text-xs font-semibold text-slate-600">智谱 GLM-4V（国内直连）</div>
+        <div class="text-xs font-semibold text-slate-600">智谱 GLM-4V（推荐，国内直连）</div>
         <div class="flex gap-2">
           <input v-model="zhipuKey" type="password" placeholder="输入智谱 API Key"
             class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
           <button class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm flex-shrink-0" @click="saveApiKey('zhipu')">保存</button>
           <button class="px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-xs flex-shrink-0" @click="testApiKey('zhipu')">测试</button>
         </div>
-        <a href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank" class="text-xs text-blue-500 underline">获取智谱 API Key →</a>
+        <a href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank" class="text-xs text-blue-500 underline">获取智谱 API Key（免费注册）→</a>
+        <div class="text-xs text-amber-600">⚠️ 注意：免费额度有限，403 错误通常表示额度用完或频率超限</div>
       </div>
 
       <div class="space-y-2">

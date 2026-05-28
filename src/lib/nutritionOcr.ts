@@ -10,12 +10,9 @@ export interface NutritionFacts {
   name?: string;
 }
 
-type Provider = 'claude' | 'zhipu' | 'moonshot' | 'gemini';
+type Provider = 'zhipu' | 'moonshot' | 'gemini';
 
 function getApiConfig(): { provider: Provider; key: string } | null {
-  const claude = localStorage.getItem('nutrition-tracker:claudeKey');
-  if (claude) return { provider: 'claude', key: claude };
-
   const zhipu = localStorage.getItem('nutrition-tracker:zhipuKey');
   if (zhipu) return { provider: 'zhipu', key: zhipu };
 
@@ -37,52 +34,10 @@ export async function recognizeNutritionLabel(imageDataUrl: string): Promise<Nut
   if (!config) return fallbackOcr(imageDataUrl);
 
   switch (config.provider) {
-    case 'claude': return claudeExtract(imageDataUrl, config.key);
     case 'zhipu': return zhipuExtract(imageDataUrl, config.key);
     case 'moonshot': return moonshotExtract(imageDataUrl, config.key);
     case 'gemini': return geminiExtract(imageDataUrl, config.key);
   }
-}
-
-async function claudeExtract(imageDataUrl: string, apiKey: string): Promise<NutritionFacts | null> {
-  const base64 = imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
-  const mimeType = imageDataUrl.match(/^data:(image\/\w+);/)?.[1] || 'image/jpeg';
-
-  const body = {
-    model: 'claude-opus-4-20250514',
-    max_tokens: 256,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
-        { type: 'text', text: '请从这张营养成分表图片中提取以下信息，返回JSON格式：{"name":"食品名称(如果可见)","per":"每份计量(如每100g)","carb":碳水化合物克数,"protein":蛋白质克数,"fat":脂肪克数}。只返回JSON，不要其他文字。如果看不清或不是营养成分表，返回null。' }
-      ]
-    }]
-  };
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30000)
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '');
-    let msg = `Claude API 错误 ${res.status}`;
-    if (res.status === 401) msg = 'Claude API Key 无效';
-    else if (res.status === 429) msg = 'Claude API 配额已用完';
-    if (errText) console.error('Claude error:', errText);
-    throw new Error(msg);
-  }
-
-  const data = await res.json();
-  const text = data?.content?.[0]?.text || '';
-  return parseJsonResponse(text);
 }
 
 async function zhipuExtract(imageDataUrl: string, apiKey: string): Promise<NutritionFacts | null> {
@@ -113,8 +68,15 @@ async function zhipuExtract(imageDataUrl: string, apiKey: string): Promise<Nutri
     console.error('[Zhipu] Response status:', res.status, 'body:', errText);
     let msg = `智谱 API 错误 ${res.status}`;
     if (res.status === 401) msg = '智谱 API Key 无效';
+    else if (res.status === 403) msg = '智谱 API 拒绝访问 — 可能原因：1) 免费额度已用完 2) API Key 权限不足 3) 调用频率过快，请稍后重试';
     else if (res.status === 400) msg = '请求格式错误，可能是图片过大或格式不支持';
-    if (errText) console.error('Zhipu error:', errText);
+    else if (res.status === 429) msg = '调用频率超限，请稍后重试';
+    if (errText) {
+      try {
+        const errJson = JSON.parse(errText);
+        if (errJson.error?.message) msg += ` (${errJson.error.message})`;
+      } catch {}
+    }
     throw new Error(msg);
   }
 
