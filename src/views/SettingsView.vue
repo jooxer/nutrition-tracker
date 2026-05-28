@@ -15,12 +15,16 @@ const cats = useCategoriesStore();
 const toast = useToast();
 const showDeleted = ref<boolean>(false);
 const draft = ref<MealRatios>(JSON.parse(JSON.stringify(DEFAULT_MEAL_RATIOS)));
+const claudeKey = ref(localStorage.getItem('nutrition-tracker:claudeKey') || '');
+const zhipuKey = ref(localStorage.getItem('nutrition-tracker:zhipuKey') || '');
+const moonshotKey = ref(localStorage.getItem('nutrition-tracker:moonshotKey') || '');
 const geminiKey = ref(localStorage.getItem('nutrition-tracker:geminiKey') || '');
 
-function saveGeminiKey() {
-  const k = geminiKey.value.trim();
-  if (k) localStorage.setItem('nutrition-tracker:geminiKey', k);
-  else localStorage.removeItem('nutrition-tracker:geminiKey');
+function saveApiKey(provider: 'claude' | 'zhipu' | 'moonshot' | 'gemini') {
+  const keyMap = { claude: claudeKey, zhipu: zhipuKey, moonshot: moonshotKey, gemini: geminiKey };
+  const k = keyMap[provider].value.trim();
+  if (k) localStorage.setItem(`nutrition-tracker:${provider}Key`, k);
+  else localStorage.removeItem(`nutrition-tracker:${provider}Key`);
   toast.show('已保存');
 }
 
@@ -162,14 +166,48 @@ const kindLabels = { carb: '碳水', protein: '蛋白质' } as const;
     </div>
 
     <div class="rounded-2xl bg-white shadow-sm p-4 space-y-3">
-      <div class="font-semibold">拍照识别（Gemini AI）</div>
-      <div class="text-xs text-slate-400">配置 Gemini API Key 后，拍营养成分表可自动识别碳蛋脂数据。免费额度充足。</div>
-      <div class="flex gap-2">
-        <input v-model="geminiKey" type="password" placeholder="输入 Gemini API Key"
-          class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
-        <button class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm flex-shrink-0" @click="saveGeminiKey">保存</button>
+      <div class="font-semibold">拍照识别（AI 视觉）</div>
+      <div class="text-xs text-slate-400">配置任一 API Key 后，拍营养成分表可自动识别碳蛋脂数据。优先级：Claude > 智谱 > Kimi > Gemini</div>
+
+      <div class="space-y-2">
+        <div class="text-xs font-semibold text-slate-600">Claude Opus 4（推荐）</div>
+        <div class="flex gap-2">
+          <input v-model="claudeKey" type="password" placeholder="sk-ant-..."
+            class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
+          <button class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm flex-shrink-0" @click="saveApiKey('claude')">保存</button>
+        </div>
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-xs text-blue-500 underline">获取 Claude API Key →</a>
       </div>
-      <a href="https://aistudio.google.com/apikey" target="_blank" class="text-xs text-blue-500 underline">获取免费 API Key →</a>
+
+      <div class="space-y-2">
+        <div class="text-xs font-semibold text-slate-600">智谱 GLM-4V</div>
+        <div class="flex gap-2">
+          <input v-model="zhipuKey" type="password" placeholder="输入智谱 API Key"
+            class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
+          <button class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm flex-shrink-0" @click="saveApiKey('zhipu')">保存</button>
+        </div>
+        <a href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank" class="text-xs text-blue-500 underline">获取智谱 API Key →</a>
+      </div>
+
+      <div class="space-y-2">
+        <div class="text-xs font-semibold text-slate-600">Kimi (Moonshot)</div>
+        <div class="flex gap-2">
+          <input v-model="moonshotKey" type="password" placeholder="输入 Moonshot API Key"
+            class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
+          <button class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm flex-shrink-0" @click="saveApiKey('moonshot')">保存</button>
+        </div>
+        <a href="https://platform.moonshot.cn/console/api-keys" target="_blank" class="text-xs text-blue-500 underline">获取 Moonshot API Key →</a>
+      </div>
+
+      <div class="space-y-2">
+        <div class="text-xs font-semibold text-slate-600">Google Gemini</div>
+        <div class="flex gap-2">
+          <input v-model="geminiKey" type="password" placeholder="输入 Gemini API Key"
+            class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
+          <button class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm flex-shrink-0" @click="saveApiKey('gemini')">保存</button>
+        </div>
+        <a href="https://aistudio.google.com/apikey" target="_blank" class="text-xs text-blue-500 underline">获取 Gemini API Key →</a>
+      </div>
     </div>
 
     <div class="rounded-2xl bg-white shadow-sm p-4 space-y-3">

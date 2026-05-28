@@ -10,22 +10,160 @@ export interface NutritionFacts {
   name?: string;
 }
 
-const GEMINI_MODEL = 'gemini-1.5-flash';
+type Provider = 'claude' | 'zhipu' | 'moonshot' | 'gemini';
 
-function getGeminiKey(): string {
-  return localStorage.getItem('nutrition-tracker:geminiKey') || import.meta.env.VITE_GEMINI_API_KEY || '';
+function getApiConfig(): { provider: Provider; key: string } | null {
+  const claude = localStorage.getItem('nutrition-tracker:claudeKey');
+  if (claude) return { provider: 'claude', key: claude };
+
+  const zhipu = localStorage.getItem('nutrition-tracker:zhipuKey');
+  if (zhipu) return { provider: 'zhipu', key: zhipu };
+
+  const moonshot = localStorage.getItem('nutrition-tracker:moonshotKey');
+  if (moonshot) return { provider: 'moonshot', key: moonshot };
+
+  const gemini = localStorage.getItem('nutrition-tracker:geminiKey');
+  if (gemini) return { provider: 'gemini', key: gemini };
+
+  return null;
 }
 
-export function hasGeminiKey(): boolean {
-  return !!getGeminiKey();
+export function hasApiKey(): boolean {
+  return !!getApiConfig();
 }
 
 export async function recognizeNutritionLabel(imageDataUrl: string): Promise<NutritionFacts | null> {
-  const key = getGeminiKey();
-  if (!key) {
-    return fallbackOcr(imageDataUrl);
+  const config = getApiConfig();
+  if (!config) return fallbackOcr(imageDataUrl);
+
+  switch (config.provider) {
+    case 'claude': return claudeExtract(imageDataUrl, config.key);
+    case 'zhipu': return zhipuExtract(imageDataUrl, config.key);
+    case 'moonshot': return moonshotExtract(imageDataUrl, config.key);
+    case 'gemini': return geminiExtract(imageDataUrl, config.key);
   }
-  return geminiExtract(imageDataUrl, key);
+}
+
+async function claudeExtract(imageDataUrl: string, apiKey: string): Promise<NutritionFacts | null> {
+  const base64 = imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
+  const mimeType = imageDataUrl.match(/^data:(image\/\w+);/)?.[1] || 'image/jpeg';
+
+  const body = {
+    model: 'claude-opus-4-20250514',
+    max_tokens: 256,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+        { type: 'text', text: '请从这张营养成分表图片中提取以下信息，返回JSON格式：{"name":"食品名称(如果可见)","per":"每份计量(如每100g)","carb":碳水化合物克数,"protein":蛋白质克数,"fat":脂肪克数}。只返回JSON，不要其他文字。如果看不清或不是营养成分表，返回null。' }
+      ]
+    }]
+  };
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    let msg = `Claude API 错误 ${res.status}`;
+    if (res.status === 401) msg = 'Claude API Key 无效';
+    else if (res.status === 429) msg = 'Claude API 配额已用完';
+    if (errText) console.error('Claude error:', errText);
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  const text = data?.content?.[0]?.text || '';
+  return parseJsonResponse(text);
+}
+
+async function zhipuExtract(imageDataUrl: string, apiKey: string): Promise<NutritionFacts | null> {
+  const body = {
+    model: 'glm-4v-flash',
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: imageDataUrl } },
+        { type: 'text', text: '请从这张营养成分表图片中提取以下信息，返回JSON格式：{"name":"食品名称(如果可见)","per":"每份计量(如每100g)","carb":碳水化合物克数,"protein":蛋白质克数,"fat":脂肪克数}。只返回JSON，不要其他文字。如果看不清或不是营养成分表，返回null。' }
+      ]
+    }]
+  };
+
+  const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    let msg = `智谱 API 错误 ${res.status}`;
+    if (res.status === 401) msg = '智谱 API Key 无效';
+    if (errText) console.error('Zhipu error:', errText);
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content || '';
+  return parseJsonResponse(text);
+}
+
+async function moonshotExtract(imageDataUrl: string, apiKey: string): Promise<NutritionFacts | null> {
+  const body = {
+    model: 'moonshot-v1-auto',
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: imageDataUrl } },
+        { type: 'text', text: '请从这张营养成分表图片中提取以下信息，返回JSON格式：{"name":"食品名称(如果可见)","per":"每份计量(如每100g)","carb":碳水化合物克数,"protein":蛋白质克数,"fat":脂肪克数}。只返回JSON，不要其他文字。如果看不清或不是营养成分表，返回null。' }
+      ]
+    }],
+    max_tokens: 256
+  };
+
+  const res = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    let msg = `Moonshot API 错误 ${res.status}`;
+    if (res.status === 401) msg = 'Moonshot API Key 无效';
+    if (errText) console.error('Moonshot error:', errText);
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content || '';
+  return parseJsonResponse(text);
+}
+
+function parseJsonResponse(text: string): NutritionFacts | null {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (parsed === null) return null;
+    return {
+      carb: Number(parsed.carb) || 0,
+      protein: Number(parsed.protein) || 0,
+      fat: Number(parsed.fat) || 0,
+      per: parsed.per || undefined,
+      name: parsed.name || undefined
+    };
+  } catch { return null; }
 }
 
 async function geminiExtract(imageDataUrl: string, apiKey: string): Promise<NutritionFacts | null> {
@@ -45,7 +183,7 @@ async function geminiExtract(imageDataUrl: string, apiKey: string): Promise<Nutr
     }
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -64,19 +202,7 @@ async function geminiExtract(imageDataUrl: string, apiKey: string): Promise<Nutr
   }
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return null;
-  try {
-    const parsed = JSON.parse(jsonMatch[0]);
-    if (parsed === null) return null;
-    return {
-      carb: Number(parsed.carb) || 0,
-      protein: Number(parsed.protein) || 0,
-      fat: Number(parsed.fat) || 0,
-      per: parsed.per || undefined,
-      name: parsed.name || undefined
-    };
-  } catch { return null; }
+  return parseJsonResponse(text);
 }
 
 // 正则 fallback（无 API key 时用 tesseract.js）
