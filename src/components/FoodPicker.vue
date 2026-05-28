@@ -5,8 +5,11 @@ import { useRecipeStore } from '@/stores/recipeStore';
 import { useCategoriesStore } from '@/stores/categoriesStore';
 import { useFoodOrderStore } from '@/stores/foodOrderStore';
 import { getRecentFoods, type RecentFood } from '@/lib/recentFoods';
+import { lookupBarcode } from '@/lib/barcode';
+import { ocrImage, parseNutritionText } from '@/lib/nutritionOcr';
 import type { FoodRow, RecipeRow } from '@/db/db';
 import { MEALS, type MealType } from '@/constants/goals';
+import BarcodeScanner from './BarcodeScanner.vue';
 
 const props = defineProps<{ open: boolean; defaultMeal?: MealType }>();
 const emit = defineEmits<{
@@ -157,6 +160,64 @@ function confirmQuickAdd() {
   emit('pickFood', quickPicking.value, quickAmount.value, meal.value);
   quickPicking.value = null;
 }
+
+// 扫码 / 拍配料表
+const showScanner = ref(false);
+const scanLoading = ref(false);
+const scanError = ref('');
+
+async function onScanned(barcode: string) {
+  showScanner.value = false;
+  scanLoading.value = true;
+  scanError.value = '';
+  try {
+    const result = await lookupBarcode(barcode);
+    if (!result) {
+      scanError.value = `未找到条码 ${barcode} 对应食品`;
+      return;
+    }
+    tab.value = 'adhoc';
+    Object.assign(adhoc, {
+      name: result.name,
+      spec: result.spec || '100g',
+      carb: result.carb,
+      protein: result.protein,
+      fat: result.fat,
+      amount: 1
+    });
+  } catch (e: any) {
+    scanError.value = e?.message || '查询失败';
+  } finally {
+    scanLoading.value = false;
+  }
+}
+
+async function onCaptured(imageDataUrl: string) {
+  showScanner.value = false;
+  scanLoading.value = true;
+  scanError.value = '';
+  try {
+    const text = await ocrImage(imageDataUrl);
+    const facts = parseNutritionText(text);
+    if (!facts) {
+      scanError.value = '未能识别营养成分，请手动输入';
+      return;
+    }
+    tab.value = 'adhoc';
+    Object.assign(adhoc, {
+      name: '',
+      spec: facts.per || '100g',
+      carb: facts.carb,
+      protein: facts.protein,
+      fat: facts.fat,
+      amount: 1
+    });
+  } catch (e: any) {
+    scanError.value = e?.message || 'OCR 识别失败';
+  } finally {
+    scanLoading.value = false;
+  }
+}
 </script>
 
 <template>
@@ -168,6 +229,11 @@ function confirmQuickAdd() {
           :class="['px-3 py-1 rounded-full text-xs',
             meal === m.value ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500']">
           {{ m.label }}
+        </button>
+        <button class="ml-auto px-3 py-1 rounded-full text-xs bg-blue-50 text-blue-600 flex items-center gap-1"
+          @click="showScanner = true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2"/><path d="M17 3h2a2 2 0 012 2v2"/><path d="M21 17v2a2 2 0 01-2 2h-2"/><path d="M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+          扫码
         </button>
       </div>
       <div class="flex border-b border-slate-100">
@@ -333,5 +399,23 @@ function confirmQuickAdd() {
 
       <button class="py-3 text-slate-500 border-t border-slate-100" @click="$emit('close')">关闭</button>
     </div>
+
+    <!-- 扫码加载中 -->
+    <div v-if="scanLoading" class="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-6 flex flex-col items-center gap-3">
+        <div class="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-sm text-slate-600">识别中...</span>
+      </div>
+    </div>
+
+    <!-- 扫码错误 -->
+    <div v-if="scanError" class="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4" @click.self="scanError = ''">
+      <div class="bg-white rounded-2xl p-4 w-full max-w-xs space-y-3">
+        <div class="text-sm text-red-600">{{ scanError }}</div>
+        <button class="w-full py-2 rounded-full bg-slate-100 text-slate-700 text-sm" @click="scanError = ''">关闭</button>
+      </div>
+    </div>
+
+    <BarcodeScanner :open="showScanner" @close="showScanner = false" @scanned="onScanned" @captured="onCaptured" />
   </div>
 </template>
