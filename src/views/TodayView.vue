@@ -5,7 +5,7 @@ import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useToast } from '@/stores/toastStore';
-import { todayKey, friendlyDate } from '@/lib/date';
+import { todayKey, friendlyDate, addDays } from '@/lib/date';
 import { WEIGHT_KG, targetsFor, mealTargetsFor, MEALS, type MealType } from '@/constants/goals';
 import { addEntry } from '@/db/logs';
 import type { RecipeRow, Entry } from '@/db/db';
@@ -25,6 +25,47 @@ const showPicker = ref(false);
 const pickerMeal = ref<MealType>('breakfast');
 const editing = ref<Entry | null>(null);
 
+// 日期导航
+const currentDate = ref(todayKey());
+const showDatePicker = ref(false);
+const pickerYear = ref(new Date().getFullYear());
+const pickerMonth = ref(new Date().getMonth() + 1);
+const pickerDay = ref(new Date().getDate());
+
+const isToday = computed(() => currentDate.value === todayKey());
+
+function goPrev() {
+  currentDate.value = addDays(currentDate.value, -1);
+  daily.loadDay(currentDate.value);
+}
+function goNext() {
+  currentDate.value = addDays(currentDate.value, 1);
+  daily.loadDay(currentDate.value);
+}
+function openDatePicker() {
+  const [y, m, d] = currentDate.value.split('-').map(Number);
+  pickerYear.value = y;
+  pickerMonth.value = m;
+  pickerDay.value = d;
+  showDatePicker.value = true;
+}
+function jumpToToday() {
+  const t = todayKey();
+  const [y, m, d] = t.split('-').map(Number);
+  pickerYear.value = y;
+  pickerMonth.value = m;
+  pickerDay.value = d;
+}
+function confirmDatePicker() {
+  const daysInMonth = new Date(pickerYear.value, pickerMonth.value, 0).getDate();
+  const day = Math.min(pickerDay.value, daysInMonth);
+  const key = `${pickerYear.value}-${String(pickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  currentDate.value = key;
+  showDatePicker.value = false;
+  daily.loadDay(key);
+}
+const pickerDaysInMonth = computed(() => new Date(pickerYear.value, pickerMonth.value, 0).getDate());
+
 // 多选模式
 const selecting = ref(false);
 const selectedIds = ref<Set<string>>(new Set());
@@ -41,7 +82,7 @@ onMounted(async () => {
   await foods.load();
   await recipeStore.load();
   settings.load();
-  await daily.loadDay(todayKey());
+  await daily.loadDay(currentDate.value);
 });
 
 const targets = computed(() => targetsFor(daily.log?.dayType ?? 'rest'));
@@ -204,8 +245,17 @@ async function confirmSaveRecipe() {
 <template>
   <div class="p-4 space-y-3 pb-24">
     <div class="flex items-center justify-between">
-      <div class="text-sm">
-        <span class="text-slate-700 font-medium">{{ daily.log ? friendlyDate(daily.log.date) : '' }}</span>
+      <div class="flex items-center gap-1">
+        <button class="w-8 h-8 flex items-center justify-center rounded-full active:bg-slate-100 text-slate-400" @click="goPrev">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="text-sm text-slate-700 font-medium px-2 py-1 rounded-lg active:bg-slate-100" @click="openDatePicker">
+          {{ daily.log ? friendlyDate(daily.log.date) : '' }}
+        </button>
+        <button class="w-8 h-8 flex items-center justify-center rounded-full active:bg-slate-100 text-slate-400" @click="goNext">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button v-if="!isToday" class="text-xs text-emerald-500 ml-1" @click="currentDate = todayKey(); daily.loadDay(currentDate)">今天</button>
       </div>
       <SegmentedControl v-if="!selecting" v-model="dayType" :options="[
         { value: 'training', label: '力训日' },
@@ -331,6 +381,37 @@ async function confirmSaveRecipe() {
         <div class="flex gap-2">
           <button class="flex-1 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm" @click="showSaveRecipe = false">取消</button>
           <button class="flex-1 px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm" @click="confirmSaveRecipe">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 日期选择器 -->
+    <div v-if="showDatePicker" class="fixed inset-0 z-50 bg-black/40 flex items-end" @click.self="showDatePicker = false">
+      <div class="w-full bg-white rounded-t-2xl p-4 space-y-3 animate-slide-up">
+        <div class="flex items-center justify-between">
+          <button class="text-sm text-slate-400" @click="showDatePicker = false">取消</button>
+          <button class="text-sm text-emerald-500 font-medium" @click="jumpToToday">今天</button>
+          <button class="text-sm text-emerald-600 font-medium" @click="confirmDatePicker">确定</button>
+        </div>
+        <div class="flex gap-2 h-48 overflow-hidden">
+          <div class="flex-1 overflow-y-auto snap-y snap-mandatory text-center" ref="yearCol">
+            <div v-for="y in 5" :key="2023 + y - 1"
+              :class="['py-3 snap-center text-sm cursor-pointer rounded-lg transition',
+                pickerYear === 2023 + y - 1 ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-slate-500']"
+              @click="pickerYear = 2023 + y - 1">{{ 2023 + y - 1 }}年</div>
+          </div>
+          <div class="flex-1 overflow-y-auto snap-y snap-mandatory text-center">
+            <div v-for="m in 12" :key="m"
+              :class="['py-3 snap-center text-sm cursor-pointer rounded-lg transition',
+                pickerMonth === m ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-slate-500']"
+              @click="pickerMonth = m">{{ m }}月</div>
+          </div>
+          <div class="flex-1 overflow-y-auto snap-y snap-mandatory text-center">
+            <div v-for="d in pickerDaysInMonth" :key="d"
+              :class="['py-3 snap-center text-sm cursor-pointer rounded-lg transition',
+                pickerDay === d ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-slate-500']"
+              @click="pickerDay = d">{{ d }}日</div>
+          </div>
         </div>
       </div>
     </div>
