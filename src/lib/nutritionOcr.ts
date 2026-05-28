@@ -110,8 +110,10 @@ async function zhipuExtract(imageDataUrl: string, apiKey: string): Promise<Nutri
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
+    console.error('[Zhipu] Response status:', res.status, 'body:', errText);
     let msg = `智谱 API 错误 ${res.status}`;
     if (res.status === 401) msg = '智谱 API Key 无效';
+    else if (res.status === 400) msg = '请求格式错误，可能是图片过大或格式不支持';
     if (errText) console.error('Zhipu error:', errText);
     throw new Error(msg);
   }

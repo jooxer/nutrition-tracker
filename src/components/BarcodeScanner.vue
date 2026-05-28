@@ -79,12 +79,26 @@ function capture() {
   if (!video.value || !canvas.value) return;
   const v = video.value;
   const c = canvas.value;
-  c.width = v.videoWidth;
-  c.height = v.videoHeight;
+
+  // 限制最大尺寸，避免 base64 过大
+  const maxWidth = 1920;
+  const maxHeight = 1920;
+  let width = v.videoWidth;
+  let height = v.videoHeight;
+
+  if (width > maxWidth || height > maxHeight) {
+    const ratio = Math.min(maxWidth / width, maxHeight / height);
+    width = Math.floor(width * ratio);
+    height = Math.floor(height * ratio);
+  }
+
+  c.width = width;
+  c.height = height;
   const ctx = c.getContext('2d');
   if (!ctx) return;
-  ctx.drawImage(v, 0, 0, c.width, c.height);
-  const dataUrl = c.toDataURL('image/jpeg', 0.85);
+  ctx.drawImage(v, 0, 0, width, height);
+  const dataUrl = c.toDataURL('image/jpeg', 0.8);
+  console.log('[Scanner] Captured image size:', Math.round(dataUrl.length / 1024), 'KB');
   emit('captured', dataUrl);
 }
 
