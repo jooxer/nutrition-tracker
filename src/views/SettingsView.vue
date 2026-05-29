@@ -278,6 +278,6 @@ const kindLabels = { carb: '碳水', protein: '蛋白质' } as const;
       </div>
     </div>
 
-    <div class="text-xs text-slate-400 text-center">v0.1.0</div>
+    <div class="text-xs text-slate-400 text-center">v0.2.0</div>
   </div>
 </template>
