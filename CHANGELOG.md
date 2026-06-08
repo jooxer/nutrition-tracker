@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-06-08
+
+### Added
+- **称重台**：今日页面营养目标下方新增「称重台」卡片，支持记录餐前/餐后重量并自动算差值入账
+  - 食用前先称重并保存餐前重量到 IndexedDB，应用关闭/手机重启都不会丢失
+  - 同时挂多条称重项，吃完后挨个补餐后重量
+  - 自动按食物 spec 解析单位克数（如「100g」「30g/片」），将差值转换为正确的 amount 多少份
+  - 入账时自动将食用克数加到当日饮食日志的对应餐次
+  - 仅在浏览「今天」时显示，避免误操作历史日期
+- **导出/导入扩展**：备份 JSON 现包含 `weighing_items`，schema 升级到 v3（兼容 v1/v2/v3 导入）
+
+### Technical
+- IndexedDB schema bumped to v3，新增 `weighing_items` object store
+- 新增 `src/lib/spec.ts` 解析食物规格中的克/毫升数值
+
 ## [0.2.0] - 2026-05-28
 
 ### Added
@@ -74,8 +89,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **0.3.0** (2026-06-08) - 称重台（餐前餐后重量记录 + 自动入账）
 - **0.2.0** (2026-05-28) - 统计页面重设计 + 拍照识别增强 + 多 AI 提供商
 - **0.1.0** (2026-05-28) - 首个功能完整版本，包含日期导航、条码扫描、OCR、历史统计等核心功能
 
+[0.3.0]: https://github.com/jooxer/nutrition-tracker/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jooxer/nutrition-tracker/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jooxer/nutrition-tracker/releases/tag/v0.1.0

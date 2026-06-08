@@ -5,6 +5,7 @@ import { useFoodStore } from '@/stores/foodStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useToast } from '@/stores/toastStore';
+import { useWeighingStore } from '@/stores/weighingStore';
 import { todayKey, friendlyDate, addDays } from '@/lib/date';
 import { WEIGHT_KG, targetsFor, mealTargetsFor, MEALS, type MealType } from '@/constants/goals';
 import { addEntry } from '@/db/logs';
@@ -15,12 +16,14 @@ import EntryRow from '@/components/EntryRow.vue';
 import EntryEditor from '@/components/EntryEditor.vue';
 import SegmentedControl from '@/components/SegmentedControl.vue';
 import FoodPicker from '@/components/FoodPicker.vue';
+import WeighingTray from '@/components/WeighingTray.vue';
 
 const daily = useDailyStore();
 const foods = useFoodStore();
 const recipeStore = useRecipeStore();
 const settings = useSettingsStore();
 const toast = useToast();
+const weighing = useWeighingStore();
 const showPicker = ref(false);
 const pickerMeal = ref<MealType>('breakfast');
 const editing = ref<Entry | null>(null);
@@ -82,6 +85,7 @@ onMounted(async () => {
   await foods.load();
   await recipeStore.load();
   settings.load();
+  await weighing.load();
   await daily.loadDay(currentDate.value);
 });
 
@@ -265,6 +269,8 @@ async function confirmSaveRecipe() {
     </div>
 
     <MetabolicDial v-if="!selecting" :totals="daily.totals" :targets="targets" :kcal="daily.kcal" :muls="daily.muls" :target-muls="targetMuls" />
+
+    <WeighingTray v-if="!selecting && isToday" />
 
     <!-- 非选中模式：使用 MealGroup -->
     <template v-if="!selecting">

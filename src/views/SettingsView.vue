@@ -113,6 +113,7 @@ async function exportJson() {
     foods: await db.getAll('foods'),
     recipes: await db.getAll('recipes'),
     daily_logs: await db.getAll('daily_logs'),
+    weighing_items: await db.getAll('weighing_items'),
     preferences: {
       foodOrder: getSetting<any>('nutrition-tracker:foodOrder'),
       categoryOrder: getSetting<any>('nutrition-tracker:categoryOrder'),
@@ -136,17 +137,20 @@ async function importJson(ev: Event) {
   const text = await file.text();
   let data: any;
   try { data = JSON.parse(text); } catch { toast.show('JSON 解析失败', 'error'); return; }
-  if (![1, 2].includes(data.schemaVersion)) { toast.show(`版本不支持（${data.schemaVersion}）`, 'error'); return; }
+  if (![1, 2, 3].includes(data.schemaVersion)) { toast.show(`版本不支持（${data.schemaVersion}）`, 'error'); return; }
   if (!Array.isArray(data.foods) || !Array.isArray(data.recipes) || !Array.isArray(data.daily_logs)) {
     toast.show('文件格式不正确', 'error'); return;
   }
   if (!confirm('将覆盖现有所有数据，继续？')) return;
   await resetDBForTests();
   const db = await getDB();
-  const tx = db.transaction(['foods','recipes','daily_logs'], 'readwrite');
+  const tx = db.transaction(['foods','recipes','daily_logs','weighing_items'], 'readwrite');
   for (const f of data.foods)       await tx.objectStore('foods').put(f);
   for (const r of data.recipes)     await tx.objectStore('recipes').put(r);
   for (const l of data.daily_logs)  await tx.objectStore('daily_logs').put(l);
+  if (Array.isArray(data.weighing_items)) {
+    for (const w of data.weighing_items) await tx.objectStore('weighing_items').put(w);
+  }
   await tx.done;
   if (data.preferences) {
     const p = data.preferences;
@@ -278,6 +282,6 @@ const kindLabels = { carb: '碳水', protein: '蛋白质' } as const;
       </div>
     </div>
 
-    <div class="text-xs text-slate-400 text-center">v0.2.0</div>
+    <div class="text-xs text-slate-400 text-center">v0.3.0</div>
   </div>
 </template>

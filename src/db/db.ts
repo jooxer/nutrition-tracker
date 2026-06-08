@@ -41,14 +41,25 @@ export interface DailyLogRow {
   entries: Entry[];
 }
 
+export interface WeighingItemRow {
+  id: string;
+  foodId: string;
+  mealType: MealType;
+  before: number;
+  after: number | null;
+  note: string | null;
+  createdAt: number;
+}
+
 export interface Schema extends DBSchema {
   foods: { key: string; value: FoodRow; indexes: { byCategory: string; byName: string; byDeleted: string } };
   recipes: { key: string; value: RecipeRow };
   daily_logs: { key: string; value: DailyLogRow };
+  weighing_items: { key: string; value: WeighingItemRow };
 }
 
 export const DB_NAME = 'nutrition-tracker';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 let _db: IDBPDatabase<Schema> | null = null;
 
@@ -64,7 +75,11 @@ export async function getDB(): Promise<IDBPDatabase<Schema>> {
         db.createObjectStore('recipes', { keyPath: 'id' });
         db.createObjectStore('daily_logs', { keyPath: 'date' });
       }
-      // v2: no-op (settings moved to localStorage)
+      if (oldVersion < 3) {
+        if (!db.objectStoreNames.contains('weighing_items')) {
+          db.createObjectStore('weighing_items', { keyPath: 'id' });
+        }
+      }
     }
   });
   return _db;
