@@ -2,19 +2,25 @@
 import { computed, ref } from 'vue';
 import { useWeighingStore } from '@/stores/weighingStore';
 import { useFoodStore } from '@/stores/foodStore';
+import { useCategoriesStore } from '@/stores/categoriesStore';
+import { useFoodOrderStore } from '@/stores/foodOrderStore';
 import { useDailyStore } from '@/stores/dailyStore';
 import { useToast } from '@/stores/toastStore';
+import { getRecentFoods, type RecentFood } from '@/lib/recentFoods';
 import { MEALS, type MealType, MEAL_LABEL } from '@/constants/goals';
 import { parseSpecGrams } from '@/lib/spec';
 import type { FoodRow, WeighingItemRow } from '@/db/db';
 
 const tray = useWeighingStore();
 const foods = useFoodStore();
+const cats = useCategoriesStore();
+const order = useFoodOrderStore();
 const daily = useDailyStore();
 const toast = useToast();
 
 const collapsed = ref(false);
 const showAdd = ref(false);
+const addTab = ref<'recent' | 'food'>('recent');
 const addQuery = ref('');
 const addMeal = ref<MealType>('breakfast');
 const addFoodId = ref<string>('');
@@ -25,12 +31,45 @@ const editAfter = ref<number | null>(null);
 const editBefore = ref<number | null>(null);
 const editMeal = ref<MealType>('breakfast');
 
-const liveFoods = computed(() => foods.foods.filter(f => !f.deleted));
-const filtered = computed(() => {
-  const q = addQuery.value.trim();
-  if (!q) return liveFoods.value.slice(0, 30);
-  return liveFoods.value.filter(f => f.name.includes(q)).slice(0, 30);
+// 最近食物
+const recentList = ref<RecentFood[]>([]);
+const recentSort = ref<'count' | 'latest'>('count');
+const recentSorted = computed(() => {
+  const list = [...recentList.value];
+  if (recentSort.value === 'count') list.sort((a, b) => b.count - a.count);
+  else list.sort((a, b) => b.lastUsed.localeCompare(a.lastUsed));
+  return list.filter(r => {
+    const f = foods.byId(r.foodId);
+    return f && !f.deleted;
+  });
 });
+
+// 食物列表（分类分组）
+const liveFoods = computed(() => foods.foods.filter(f => !f.deleted));
+const catCollapsed = ref<Set<string>>(new Set(cats.all));
+const searching = computed(() => addQuery.value.trim().length > 0);
+const grouped = computed(() => {
+  const q = addQuery.value.trim();
+  const filtered = q ? liveFoods.value.filter(f => f.name.includes(q)) : liveFoods.value;
+  const map = new Map<string, FoodRow[]>();
+  for (const cat of cats.all) map.set(cat, []);
+  for (const f of filtered) {
+    if (!map.has(f.category)) map.set(f.category, []);
+    map.get(f.category)!.push(f);
+  }
+  return [...map.entries()]
+    .filter(([, v]) => v.length > 0)
+    .map(([cat, list]) => [cat, order.sort(cat, list)] as const);
+});
+
+function toggleCat(cat: string) {
+  const next = new Set(catCollapsed.value);
+  if (next.has(cat)) next.delete(cat); else next.add(cat);
+  catCollapsed.value = next;
+}
+function isCatCollapsed(cat: string) { return !searching.value && catCollapsed.value.has(cat); }
+function expandAll() { catCollapsed.value = new Set(); }
+function collapseAll() { catCollapsed.value = new Set(cats.all); }
 
 const hasItems = computed(() => tray.items.length > 0);
 const summaryText = computed(() => {
@@ -52,11 +91,13 @@ function consumed(it: WeighingItemRow): number {
   return Math.max(0, it.before - it.after);
 }
 
-function openAdd() {
+async function openAdd() {
   addQuery.value = '';
   addFoodId.value = '';
   addBefore.value = null;
   addMeal.value = currentMealGuess();
+  addTab.value = 'recent';
+  recentList.value = await getRecentFoods();
   showAdd.value = true;
 }
 
@@ -215,31 +256,86 @@ async function removeOne(id: string) {
 
     <!-- 新增称重项 sheet -->
     <div v-if="showAdd" class="fixed inset-0 z-50 bg-black/40 flex items-end" @click.self="showAdd = false">
-      <div class="w-full bg-white rounded-t-2xl p-4 space-y-3 animate-slide-up max-h-[80vh] overflow-hidden flex flex-col">
-        <div class="flex items-center justify-between">
+      <div class="w-full bg-white rounded-t-2xl animate-slide-up max-h-[80vh] overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between px-4 pt-4 pb-2">
           <span class="text-base font-semibold">添加称重</span>
           <button class="text-sm text-slate-400" @click="showAdd = false">取消</button>
         </div>
-        <input v-model="addQuery" placeholder="搜索食物..."
-               class="w-full px-3 py-2 rounded-lg bg-slate-100 text-sm" />
-        <div class="flex-1 min-h-0 overflow-y-auto -mx-4 px-4">
-          <div class="space-y-1">
-            <button v-for="f in filtered" :key="f.id"
-                    @click="addFoodId = f.id"
-                    :class="['w-full text-left px-3 py-2 rounded-lg flex items-center justify-between',
-                             addFoodId === f.id ? 'bg-emerald-50' : 'active:bg-slate-50']">
-              <div class="min-w-0 flex-1">
-                <div class="text-sm truncate">{{ f.name }}</div>
-                <div class="text-[11px] text-slate-400 truncate">{{ f.spec }} · 碳{{ f.carb }} 蛋{{ f.protein }} 脂{{ f.fat }}</div>
-              </div>
-              <svg v-if="addFoodId === f.id" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500">
+
+        <div class="flex border-b border-slate-100">
+          <button @click="addTab = 'recent'"
+            :class="['py-2.5 flex-1 text-sm', addTab === 'recent' ? 'text-emerald-600 font-semibold border-b-2 border-emerald-500' : 'text-slate-500']">最近</button>
+          <button @click="addTab = 'food'"
+            :class="['py-2.5 flex-1 text-sm', addTab === 'food' ? 'text-emerald-600 font-semibold border-b-2 border-emerald-500' : 'text-slate-500']">食物</button>
+        </div>
+
+        <!-- 最近 tab -->
+        <div v-if="addTab === 'recent'" class="flex-1 min-h-0 overflow-y-auto">
+          <div class="px-3 py-2 flex items-center justify-between border-b border-slate-50">
+            <span class="text-xs text-slate-400">按{{ recentSort === 'count' ? '添加次数' : '最新添加' }}排序</span>
+            <button class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600"
+              @click="recentSort = recentSort === 'count' ? 'latest' : 'count'">
+              切换{{ recentSort === 'count' ? '最新' : '次数' }}
+            </button>
+          </div>
+          <div v-if="!recentSorted.length" class="flex items-center justify-center text-sm text-slate-400 py-8">暂无记录</div>
+          <div v-else>
+            <button v-for="r in recentSorted" :key="r.foodId"
+              @click="addFoodId = r.foodId"
+              :class="['flex w-full text-left items-center px-4 py-2.5 border-b border-slate-50 gap-3',
+                       addFoodId === r.foodId ? 'bg-emerald-50' : 'active:bg-slate-50']">
+              <span class="flex-1 min-w-0">
+                <span class="block text-sm truncate">{{ foods.byId(r.foodId)?.name }}</span>
+                <span class="block text-xs text-slate-400 truncate">{{ foods.byId(r.foodId)?.spec }} · {{ r.count }}次</span>
+              </span>
+              <svg v-if="addFoodId === r.foodId" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500 flex-shrink-0">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
             </button>
-            <div v-if="!filtered.length" class="text-center text-xs text-slate-400 py-4">没有匹配的食物</div>
           </div>
         </div>
-        <div class="space-y-2 pt-2 border-t border-slate-100">
+
+        <!-- 食物 tab -->
+        <div v-else class="flex-1 min-h-0 overflow-y-auto flex flex-col">
+          <div class="p-3 flex items-center gap-2">
+            <input v-model="addQuery" placeholder="搜索食物..." class="flex-1 px-3 py-2 rounded-lg bg-slate-100 text-sm" />
+            <button v-if="!searching"
+              class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-500 flex-shrink-0"
+              @click="catCollapsed.size ? expandAll() : collapseAll()">
+              {{ catCollapsed.size ? '全部展开' : '全部收起' }}
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <div v-for="[cat, list] in grouped" :key="cat">
+              <button class="w-full px-4 py-2 flex items-center justify-between bg-slate-50 active:bg-slate-100 transition"
+                @click="toggleCat(cat)">
+                <span class="text-xs text-slate-500">{{ cat }}<span class="ml-1.5 text-slate-400">{{ list.length }}</span></span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round"
+                  :class="['text-slate-400 transition-transform', isCatCollapsed(cat) ? '' : 'rotate-90']">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </button>
+              <div v-show="!isCatCollapsed(cat)">
+                <button v-for="f in list" :key="f.id"
+                  @click="addFoodId = f.id"
+                  :class="['flex w-full text-left px-4 py-2 border-b border-slate-50 active:bg-slate-50 items-center gap-3',
+                           addFoodId === f.id ? 'bg-emerald-50' : '']">
+                  <span class="flex-1 min-w-0">
+                    <span class="block text-sm truncate">{{ f.name }}</span>
+                    <span class="block text-xs text-slate-400">{{ f.spec }} · 碳{{ f.carb }} 蛋{{ f.protein }} 脂{{ f.fat }}</span>
+                  </span>
+                  <svg v-if="addFoodId === f.id" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500 flex-shrink-0">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部表单 -->
+        <div class="p-4 space-y-2 border-t border-slate-100">
           <div>
             <div class="text-xs text-slate-400 mb-1">餐次</div>
             <div class="flex gap-1.5">
@@ -255,10 +351,10 @@ async function removeOne(id: string) {
             <input v-model.number="addBefore" type="number" step="0.1" inputmode="decimal" placeholder="例如 280.5"
                    class="w-full px-3 py-2 rounded-lg bg-slate-100 text-sm tabular-nums" />
           </label>
+          <button class="w-full py-2.5 rounded-full bg-emerald-500 text-white text-sm font-medium" @click="confirmAdd">
+            加入称重台
+          </button>
         </div>
-        <button class="w-full py-2.5 rounded-full bg-emerald-500 text-white text-sm font-medium" @click="confirmAdd">
-          加入称重台
-        </button>
       </div>
     </div>
   </div>
